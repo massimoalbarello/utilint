@@ -44,7 +44,7 @@ export function createChatGPTAuth(fetcher: typeof fetch = fetch) {
       method: 'POST',
       headers: {
         'content-type': form ? 'application/x-www-form-urlencoded' : 'application/json',
-        'user-agent': 'utilint/0.2.0',
+        'user-agent': 'utilint',
         originator: 'utilint',
       },
       body: form ? new URLSearchParams(body) : JSON.stringify(body),

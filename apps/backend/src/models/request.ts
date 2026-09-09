@@ -141,7 +141,7 @@ export function prepareRequest(endpoint: string, body: unknown): Record<string, 
     throw new AppError(
       400,
       'invalid_request',
-      'Check the supported fields in the integration guide.',
+      'Invalid request. Check the supported fields and their values.',
     );
   const data: Record<string, unknown> = parsed.data;
   if (data.max_tokens !== undefined) data.max_completion_tokens = data.max_tokens;

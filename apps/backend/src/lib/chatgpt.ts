@@ -176,7 +176,7 @@ export function createChatGPTProvider(fetcher: typeof fetch = fetch) {
       authorization: `Bearer ${tokens.access}`,
       'chatgpt-account-id': tokens.accountId,
       originator: 'utilint',
-      'user-agent': 'utilint/0.2.0',
+      'user-agent': 'utilint',
     };
     const client = new OpenAI({
       apiKey: tokens.access,

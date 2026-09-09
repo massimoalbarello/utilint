@@ -85,7 +85,6 @@ export function createApp({
       service: 'utilint',
       provider: 'openai',
       authentication: ['chatgpt-subscription'],
-      version: '0.1.0',
     }))
     .get('/api/auth/*', ({ request }) => auth.handler(request))
     .post('/api/auth/*', ({ request }) => auth.handler(request), { parse: 'none' })
