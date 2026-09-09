@@ -80,21 +80,10 @@ try {
   async function authorizationCode(login: boolean) {
     const verifier = randomBytes(32).toString('base64url');
     const state = randomBytes(24).toString('hex');
-    const params = new URLSearchParams({
-      client_id: client.client_id,
-      redirect_uri: redirectUri,
-      response_type: 'code',
-      scope: 'profile ai:invoke offline_access',
-      resource: `${origin}/v1`,
-      code_challenge: createHash('sha256').update(verifier).digest('base64url'),
-      code_challenge_method: 'S256',
-      state,
-      prompt: 'consent',
-    });
     const connect = new URLSearchParams({
       redirect_uri: redirectUri,
       state,
-      code_challenge: params.get('code_challenge')!,
+      code_challenge: createHash('sha256').update(verifier).digest('base64url'),
     });
     await page.goto(`${origin}/connect/${client.client_id}?${connect}`);
     if (login) {
