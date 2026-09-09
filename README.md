@@ -1,5 +1,3 @@
-<img src="apps/frontend/src/assets/utilint-logo.svg" width="72" height="72" alt="Utilint logo" />
-
 # Utility intelligence
 
 [![Deploy on nibrun](https://nibrun.com/button.svg)](https://app.nibrun.com/deploy?name=utilint&binary=https%3A%2F%2Fgithub.com%2Fmassimoalbarello%2Futilint%2Freleases%2Fdownload%2Fnibrun-latest%2Futilint&port=3000&env=BETTER_AUTH_SECRET&minimal)
