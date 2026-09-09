@@ -27,7 +27,7 @@ export function connectRoutes({
       '/connect/:clientId',
       async ({ params, query, redirect }) => {
         if (!query.redirect_uri && !query.state && !query.code_challenge)
-          return redirect(await developers.startUrl(params.clientId), 302);
+          return redirect(await developers.connectionUrl(params.clientId), 302);
         if (!query.redirect_uri || !query.state || !query.code_challenge)
           throw new AppError(400, 'invalid_request', 'Restart the connection from the app.');
         const target = new URL('/api/auth/oauth2/authorize', origin);

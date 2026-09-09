@@ -5,7 +5,8 @@ import { chromium, expect, type Page, request as requestFactory } from '@playwri
 import { fixture } from '../apps/backend/test/support/fixture';
 
 const origin = 'http://localhost:4350';
-const redirectUri = 'http://localhost:4351/callback';
+const redirectUri = 'http://localhost:4351/callback?tenant=notes';
+const connectionEntry = `${redirectUri}&utilint_connect=1`;
 const assets = new Map<string, Blob>();
 const frontend = resolve('apps/frontend/dist');
 for (const file of new Bun.Glob('**/*').scanSync({ cwd: frontend, onlyFiles: true })) {
@@ -57,10 +58,10 @@ try {
   await page.getByRole('link', { name: 'Developers', exact: true }).click();
   await page.getByRole('button', { name: 'Register an app' }).click();
   await page.getByLabel('Application name', { exact: true }).fill('Notes');
-  await page.getByLabel('Redirect URLs', { exact: true }).fill(redirectUri);
   await page
-    .getByLabel('Connection start URL', { exact: true })
-    .fill('http://localhost:4351/start');
+    .getByLabel('Callback URLs', { exact: true })
+    .fill(`${redirectUri}\nhttp://localhost:4351/secondary`);
+  await expect(page.getByLabel('Connection start URL', { exact: true })).toHaveCount(0);
   const creation = page.waitForResponse(
     (r) => r.url() === `${origin}/api/developer/apps` && r.request().method() === 'POST',
   );
@@ -157,9 +158,7 @@ try {
       maxRedirects: 0,
     });
     expect(link.status()).toBe(302);
-    expect(link.headers().location).toBe(
-      suffix ? `/connect/${client.client_id}` : 'http://localhost:4351/start',
-    );
+    expect(link.headers().location).toBe(suffix ? `/connect/${client.client_id}` : connectionEntry);
   }
   expect(
     (
@@ -169,20 +168,17 @@ try {
     ).status(),
   ).toBe(400);
   expect((await server.get(`${origin}/connect/unknown`, { maxRedirects: 0 })).status()).toBe(404);
-  const invalidStart = await context.request.put(
-    `${origin}/api/developer/apps/${client.client_id}/start`,
-    {
-      headers: { origin },
-      data: { startUrl: 'https://attacker.example/start' },
-    },
-  );
-  expect(invalidStart.status()).toBe(400);
+  const reserved = await context.request.post(`${origin}/api/developer/apps`, {
+    headers: { origin },
+    data: { name: 'Invalid', redirectUris: ['http://localhost:4351/callback?utilint_connect=1'] },
+  });
+  expect(reserved.status()).toBe(400);
   await page.getByRole('button', { name: 'Sign out' }).click();
   await page.goto(
     `${origin}/login?redirect=${encodeURIComponent(`/connect/${client.client_id}/test`)}`,
   );
   await page.getByRole('button', { name: 'Sign in with a passkey' }).click();
-  await expect(page).toHaveURL('http://localhost:4351/start');
+  await expect(page).toHaveURL(connectionEntry);
   await page.goto(`${origin}/dashboard`);
   await page.getByRole('button', { name: 'Sign out' }).click();
   const tokens = await authorize(true);
@@ -287,17 +283,9 @@ try {
   ).toBe(false);
   expect(
     (
-      await other.request.put(`${origin}/api/developer/apps/${client.client_id}/start`, {
-        headers: { origin },
-        data: { startUrl: 'http://localhost:4351/attacker' },
-      })
-    ).status(),
-  ).toBe(404);
-  expect(
-    (
       await other.request.get(`${origin}/connect/${client.client_id}`, { maxRedirects: 0 })
     ).headers().location,
-  ).toBe('http://localhost:4351/start');
+  ).toBe(connectionEntry);
   await other.close();
   await page.getByRole('button', { name: 'Disconnect', exact: true }).click();
   await page.getByRole('button', { name: 'Disconnect', exact: true }).click();

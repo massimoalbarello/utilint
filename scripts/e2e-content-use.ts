@@ -125,7 +125,6 @@ try {
           body: JSON.stringify({
             name: 'Content Use',
             redirectUris: [callback],
-            startUrl: new URL('/api/utilint/start', callback).href,
           }),
         })
       ).json(),
@@ -144,6 +143,25 @@ try {
   await page.getByLabel('Client secret', { exact: true }).fill(client.client_secret);
   await page.getByRole('button', { name: 'Save utilint app' }).click();
   await expect(page.getByText('Ready to connect', { exact: true })).toBeVisible();
+  await expect(page.getByText('Connection start URL', { exact: true })).toHaveCount(0);
+  // Missing, malformed, and mixed responses must fail rather than restarting OAuth.
+  for (const query of [
+    '',
+    '?code=invalid',
+    '?state=invalid',
+    '?error=access_denied',
+    '?utilint_connect=1&code=invalid',
+    '?utilint_connect=1&state=invalid',
+    '?utilint_connect=1&utilint_connect=1',
+    '?utilint_connect=2',
+  ]) {
+    const response = await context.request.get(`${c}/api/utilint/callback${query}`, {
+      maxRedirects: 0,
+    });
+    expect(response.status()).toBe(303);
+    expect(response.headers().location).toBe(`${c}/utilint/complete?status=failed`);
+  }
+  expect((await (await context.request.get(`${c}/api/utilint`)).json()).connected).toBe(false);
   const created = await page.evaluate(async () =>
     (
       await fetch('/api/records', {
@@ -228,6 +246,10 @@ try {
   await developer.goto(`${u}/dashboard`);
   await developer.getByRole('button', { name: 'Sign out', exact: true }).click();
   // Keep the Content Use passkey on its original authenticator. It navigates the public link first.
+  const signedOutResponse = await context.request.get(`${c}/api/utilint/callback?code=invalid`, {
+    maxRedirects: 0,
+  });
+  expect(signedOutResponse.headers().location).toBe(`${c}/utilint/complete?status=failed`);
   await page.goto(`${u}/connect/${client.client_id}`);
   await expect(page.getByRole('button', { name: 'Sign in with passkey' })).toBeVisible();
   await page.getByRole('button', { name: 'Sign in with passkey' }).click();
