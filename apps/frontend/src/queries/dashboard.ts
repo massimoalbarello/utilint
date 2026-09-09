@@ -14,15 +14,3 @@ export const dashboardOptions = queryOptions({
   queryKey: ['dashboard'],
   queryFn: () => unwrap(api.api.dashboard.get()),
 });
-export const developerOptions = queryOptions({
-  queryKey: ['developer-apps'],
-  queryFn: () => unwrap(api.api.developer.apps.get()),
-});
-export const publicClientOptions = (clientId: string) =>
-  queryOptions({
-    queryKey: ['oauth-client', clientId],
-    queryFn: () => unwrap(api.api.authorization({ clientId }).get()),
-  });
-export type DeveloperApp = NonNullable<
-  Awaited<ReturnType<typeof api.api.developer.apps.get>>['data']
->[number];

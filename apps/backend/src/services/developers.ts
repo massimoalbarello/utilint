@@ -1,10 +1,33 @@
 import type { Auth } from '#lib/auth/better-auth.ts';
-export function createDeveloperService(auth: Auth) {
+import { AppError } from '#models/gateway.ts';
+import type { DeveloperRepository } from '#repositories/developers.ts';
+
+export function createDeveloperService(auth: Auth, repository: DeveloperRepository) {
   return {
+    async registrationStatus(clientId: string) {
+      return { clientId, status: await repository.registrationStatus(clientId) };
+    },
     list(headers: Headers) {
       return auth.api.getOAuthClients({ headers });
     },
-    register({
+    async connectionUrl(clientId: string) {
+      const callback = await repository.publicCallback(clientId);
+      if (!callback) throw new AppError(404, 'not_found', 'App not found.');
+      const url = new URL(callback);
+      if (
+        url.username ||
+        url.password ||
+        url.hash ||
+        !(
+          url.protocol === 'https:' ||
+          (url.protocol === 'http:' && ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname))
+        )
+      )
+        throw new AppError(400, 'invalid_callback', 'This app needs a valid HTTPS callback URL.');
+      url.searchParams.set('utilint_connect', '1');
+      return url.href;
+    },
+    async register({
       headers,
       name,
       redirectUris,
@@ -13,6 +36,12 @@ export function createDeveloperService(auth: Auth) {
       name: string;
       redirectUris: string[];
     }) {
+      if (redirectUris.some((uri) => new URL(uri).searchParams.has('utilint_connect')))
+        throw new AppError(
+          400,
+          'invalid_callback',
+          'The utilint_connect query parameter is reserved.',
+        );
       return auth.api.createOAuthClient({
         headers,
         body: {

@@ -3,6 +3,7 @@ import { Elysia } from 'elysia';
 import type { AssetFiles } from '#lib/assets.ts';
 import type { Auth } from '#lib/auth/better-auth.ts';
 import { AppError } from '#models/gateway.ts';
+import { connectRoutes } from '#routes/connect.ts';
 import { dashboardRoutes } from '#routes/dashboard.ts';
 import { gatewayRoutes } from '#routes/gateway.ts';
 import type { DashboardService } from '#services/dashboard.ts';
@@ -91,6 +92,7 @@ export function createApp({
     .patch('/api/auth/*', ({ request }) => auth.handler(request), { parse: 'none' })
     .delete('/api/auth/*', ({ request }) => auth.handler(request), { parse: 'none' })
     .get('/.well-known/*', ({ request }) => auth.handler(request))
+    .use(connectRoutes({ auth, providers, developers, origin }))
     .use(dashboardRoutes({ auth, dashboard, developers, providers, origin }))
     .use(gatewayRoutes({ auth, gateway }))
     .get('/*', ({ path }) => {

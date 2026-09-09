@@ -9,7 +9,10 @@ export const chatGPTLoginOptions = (loginId: string, queryClient: QueryClient) =
     queryKey: ['provider-login', loginId],
     queryFn: async () => {
       const result = await unwrap(api.api.provider.chatgpt({ loginId }).post());
-      if (result.status === 'connected') await queryClient.invalidateQueries(dashboardOptions);
+      if (result.status === 'connected') {
+        await queryClient.invalidateQueries(dashboardOptions);
+        await queryClient.invalidateQueries({ queryKey: ['consent'] });
+      }
       return result;
     },
     refetchInterval: (query) =>

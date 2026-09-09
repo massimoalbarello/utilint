@@ -5,7 +5,8 @@ import { chromium, expect, type Page, request as requestFactory } from '@playwri
 import { fixture } from '../apps/backend/test/support/fixture';
 
 const origin = 'http://localhost:4350';
-const redirectUri = 'http://localhost:4351/callback';
+const redirectUri = 'http://localhost:4351/callback?tenant=notes';
+const connectionEntry = `${redirectUri}&utilint_connect=1`;
 const assets = new Map<string, Blob>();
 const frontend = resolve('apps/frontend/dist');
 for (const file of new Bun.Glob('**/*').scanSync({ cwd: frontend, onlyFiles: true })) {
@@ -54,43 +55,74 @@ try {
   await page.getByRole('button', { name: 'Create account with a passkey' }).click();
   await expect(page).toHaveURL(`${origin}/dashboard`, { timeout: 15000 });
   await screenshot('account-empty');
-  await page.getByRole('link', { name: 'Developers', exact: true }).click();
-  await page.getByRole('button', { name: 'Register an app' }).click();
-  await page.getByLabel('Application name', { exact: true }).fill('Notes');
-  await page.getByLabel('Redirect URLs', { exact: true }).fill(redirectUri);
-  const creation = page.waitForResponse(
-    (r) => r.url() === `${origin}/api/developer/apps` && r.request().method() === 'POST',
-  );
-  await page.getByRole('button', { name: 'Create application' }).click();
-  const created = await creation;
-  expect(created.status()).toBe(200);
+  await expect(page.getByRole('link', { name: 'Developers', exact: true })).toHaveCount(0);
+  await page.goto(`${origin}/developers`);
+  await expect(page).toHaveURL(`${origin}/dashboard`);
+  await expect(page.getByRole('heading', { name: 'Connected apps', exact: true })).toBeVisible();
+  // App registration belongs to the integrating backend, outside the user dashboard.
+  const created = await context.request.post(`${origin}/api/auth/oauth2/register`, {
+    headers: { origin },
+    data: {
+      client_name: 'Notes',
+      redirect_uris: [redirectUri, 'http://localhost:4351/secondary'],
+      application_type: 'native',
+      token_endpoint_auth_method: 'client_secret_basic',
+      grant_types: ['authorization_code', 'refresh_token'],
+      response_types: ['code'],
+      scope: 'profile ai:invoke offline_access',
+    },
+  });
+  expect(created.status()).toBe(201);
   const client = await created.json();
   expect(client.client_secret).toBeTruthy();
-  await expect(page.getByRole('heading', { name: 'Save your client secret' })).toBeVisible();
-  await page.getByRole('button', { name: 'I’ve saved it' }).click();
-  await screenshot('developers');
+  expect(await page.content()).not.toContain(client.client_secret);
   const basic = Buffer.from(`${client.client_id}:${client.client_secret}`).toString('base64');
   async function authorizationCode(login: boolean) {
     const verifier = randomBytes(32).toString('base64url');
     const state = randomBytes(24).toString('hex');
-    const params = new URLSearchParams({
-      client_id: client.client_id,
+    const connect = new URLSearchParams({
       redirect_uri: redirectUri,
-      response_type: 'code',
-      scope: 'profile ai:invoke offline_access',
-      resource: `${origin}/v1`,
-      code_challenge: createHash('sha256').update(verifier).digest('base64url'),
-      code_challenge_method: 'S256',
       state,
-      prompt: 'consent',
+      code_challenge: createHash('sha256').update(verifier).digest('base64url'),
     });
-    await page.goto(`${origin}/api/auth/oauth2/authorize?${params}`);
+    await page.goto(`${origin}/connect/${client.client_id}?${connect}`);
     if (login) {
       await page.getByRole('button', { name: 'Sign in with a passkey' }).click();
     }
-    await expect(page.getByRole('heading', { name: 'Connect Notes?' })).toBeVisible();
+    await expect(
+      page.getByRole('heading', {
+        name: /Connect your ChatGPT subscription|Authorize Notes|Notes is already authorized/,
+      }),
+    ).toBeVisible();
+    if (
+      await page.getByRole('heading', { name: 'Connect your ChatGPT subscription' }).isVisible()
+    ) {
+      const oauthQuery = new URL(page.url()).search.slice(1);
+      const premature = await context.request.post(`${origin}/api/auth/oauth2/consent`, {
+        headers: { origin },
+        data: { accept: true, oauth_query: oauthQuery },
+      });
+      expect(premature.status()).toBe(403);
+      const tampered = new URLSearchParams(oauthQuery);
+      tampered.set('client_id', 'attacker');
+      expect(
+        (
+          await context.request.post(`${origin}/api/connect/context`, {
+            headers: { origin },
+            data: { oauthQuery: tampered.toString() },
+          })
+        ).ok(),
+      ).toBe(false);
+      await page.getByRole('button', { name: 'Connect ChatGPT', exact: true }).click();
+      await expect(page.getByLabel('ChatGPT sign-in code')).toHaveText('TEST-12345');
+      await screenshot('consent-connect-chatgpt');
+      f.state.now += 6000;
+    }
+    await expect(
+      page.getByRole('heading', { name: /Authorize Notes|Notes is already authorized/ }),
+    ).toBeVisible({ timeout: 15000 });
     await screenshot('consent');
-    await page.getByRole('button', { name: 'Allow connection' }).click();
+    await page.getByRole('button', { name: /Allow connection|Continue to Notes/ }).click();
     await expect(page).toHaveURL(/localhost:4351\/callback\?/, { timeout: 15000 });
     const result = new URL(page.url());
     expect(result.searchParams.get('state')).toBe(state);
@@ -113,6 +145,33 @@ try {
     expect(response.status()).toBe(200);
     return response.json();
   }
+  for (const suffix of ['', '/test']) {
+    const link = await server.get(`${origin}/connect/${client.client_id}${suffix}`, {
+      maxRedirects: 0,
+    });
+    expect(link.status()).toBe(302);
+    expect(link.headers().location).toBe(suffix ? `/connect/${client.client_id}` : connectionEntry);
+  }
+  expect(
+    (
+      await server.get(`${origin}/connect/${client.client_id}?state=${'x'.repeat(32)}`, {
+        maxRedirects: 0,
+      })
+    ).status(),
+  ).toBe(400);
+  expect((await server.get(`${origin}/connect/unknown`, { maxRedirects: 0 })).status()).toBe(404);
+  const reserved = await context.request.post(`${origin}/api/developer/apps`, {
+    headers: { origin },
+    data: { name: 'Invalid', redirectUris: ['http://localhost:4351/callback?utilint_connect=1'] },
+  });
+  expect(reserved.status()).toBe(400);
+  await page.getByRole('button', { name: 'Sign out' }).click();
+  await page.goto(
+    `${origin}/login?redirect=${encodeURIComponent(`/connect/${client.client_id}/test`)}`,
+  );
+  await page.getByRole('button', { name: 'Sign in with a passkey' }).click();
+  await expect(page).toHaveURL(connectionEntry);
+  await page.goto(`${origin}/dashboard`);
   await page.getByRole('button', { name: 'Sign out' }).click();
   const tokens = await authorize(true);
   const generate = (token: string, streaming = false, endpoint = 'chat/completions') =>
@@ -126,8 +185,8 @@ try {
           : { messages: [{ role: 'user', content: 'Hello' }] }),
       },
     });
-  expect((await generate(tokens.access_token)).status()).toBe(403);
-  expect(f.state.calls).toBe(0);
+  expect((await generate(tokens.access_token)).status()).toBe(200);
+  expect(f.state.calls).toBe(1);
   await page.goto(`${origin}/dashboard`);
   async function connectChatGPT() {
     await page.getByRole('button', { name: 'Connect ChatGPT' }).click();
@@ -140,7 +199,7 @@ try {
     await page.getByRole('button', { name: 'Done', exact: true }).click();
     await expect(page.getByText('fixture@example.test · plus')).toBeVisible();
   }
-  await connectChatGPT();
+  await expect(page.getByText('fixture@example.test · plus')).toBeVisible();
   const dashboard = await (await context.request.get(`${origin}/api/dashboard`)).json();
   expect(dashboard.connections).toEqual([{ clientId: client.client_id, name: 'Notes' }]);
   for (const value of [f.access, f.refresh, 'fixture-private-device-id']) {
@@ -179,7 +238,7 @@ try {
   f.state.upstreamError = false;
   await screenshot('account-connected');
   console.log(
-    'PASS real passkeys, app registration, OAuth PKCE, encrypted provider storage, and both gateway APIs',
+    'PASS user-only dashboard, dynamic app registration, real passkeys, OAuth PKCE, encrypted provider storage, and both gateway APIs',
   );
   const crossOrigin = await context.request.delete(`${origin}/api/provider`, {
     headers: { origin: 'https://attacker.example' },
@@ -214,6 +273,11 @@ try {
       })
     ).ok(),
   ).toBe(false);
+  expect(
+    (
+      await other.request.get(`${origin}/connect/${client.client_id}`, { maxRedirects: 0 })
+    ).headers().location,
+  ).toBe(connectionEntry);
   await other.close();
   await page.getByRole('button', { name: 'Disconnect', exact: true }).click();
   await page.getByRole('button', { name: 'Disconnect', exact: true }).click();
@@ -252,18 +316,23 @@ try {
       })
     ).ok(),
   ).toBe(false);
+  await page.goto(`${origin}/developers`);
+  await expect(page).toHaveURL(`${origin}/dashboard`);
+  await expect(page.getByRole('button', { name: 'Register an app' })).toHaveCount(0);
   const reauthorized = await authorize(false);
   expect((await generate(refreshed.access_token)).status()).toBe(401);
   expect((await generate(reauthorized.access_token)).status()).toBe(200);
   await page.goto(`${origin}/dashboard`);
   await page.setViewportSize({ width: 390, height: 844 });
   await screenshot('account-mobile');
-  await page.getByRole('link', { name: 'Developers', exact: true }).click();
-  await screenshot('developers-mobile');
+  await expect(page.getByRole('link', { name: 'Developers', exact: true })).toHaveCount(0);
   const deleted = await context.request.delete(`${origin}/api/developer/apps/${client.client_id}`, {
     headers: { origin },
   });
   expect(deleted.status()).toBe(200);
+  expect(
+    (await server.get(`${origin}/connect/${client.client_id}`, { maxRedirects: 0 })).status(),
+  ).toBe(404);
   expect((await generate(reauthorized.access_token)).status()).toBe(401);
   expect(
     (await f.db`SELECT name FROM sqlite_master WHERE type='table' AND name LIKE 'gateway_%'`)

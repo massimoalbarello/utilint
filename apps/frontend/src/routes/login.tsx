@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { createFileRoute } from '@tanstack/react-router';
 import { Fingerprint } from 'lucide-react';
 import { AuthLayout } from '../components/layout/public-layout';
 import { Button } from '../components/ui/button';
@@ -17,7 +17,6 @@ export const Route = createFileRoute('/login')({
 });
 function Login() {
   const search = Route.useSearch();
-  const navigate = useNavigate();
   const qc = useQueryClient();
   const toggle = new URLSearchParams(window.location.search);
   toggle.set('signup', String(!search.signup));
@@ -40,7 +39,7 @@ function Login() {
         !search.redirect.includes('\\')
           ? search.redirect
           : '/dashboard';
-      await navigate({ to: target });
+      window.location.assign(target);
     },
   });
   return (

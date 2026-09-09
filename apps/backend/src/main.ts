@@ -8,6 +8,7 @@ import { createChatGPTAuth } from './lib/chatgpt-auth.ts';
 import { loadEnv } from './lib/env.ts';
 import { createVault } from './lib/vault.ts';
 import { createConnectionRepository } from './repositories/sqlite-connections.ts';
+import { createDeveloperRepository } from './repositories/sqlite-developers.ts';
 import { createDashboardService } from './services/dashboard.ts';
 import { createDeveloperService } from './services/developers.ts';
 import { createGatewayService } from './services/gateway.ts';
@@ -17,8 +18,13 @@ const env = loadEnv();
 const vault = createVault(env.secret);
 const database = await createSqliteDatabase({ dataFolder: env.dataFolder });
 await runMigrations({ db: database });
-const auth = createAuth({ database, baseUrl: env.baseUrl, secret: env.secret });
 const repository = createConnectionRepository(database);
+const auth = createAuth({
+  database,
+  baseUrl: env.baseUrl,
+  secret: env.secret,
+  hasProvider: async (ownerId) => Boolean(await repository.credential(ownerId)),
+});
 const providers = createProviderService({
   repository,
   vault,
@@ -30,7 +36,7 @@ const app = createApp({
   auth,
   providers,
   dashboard: createDashboardService(repository, providers),
-  developers: createDeveloperService(auth),
+  developers: createDeveloperService(auth, createDeveloperRepository(database)),
   gateway: createGatewayService(repository, providers),
   assets: getPublicAssets(),
   origin: env.baseUrl.origin,
