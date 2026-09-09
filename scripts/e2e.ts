@@ -55,24 +55,27 @@ try {
   await page.getByRole('button', { name: 'Create account with a passkey' }).click();
   await expect(page).toHaveURL(`${origin}/dashboard`, { timeout: 15000 });
   await screenshot('account-empty');
-  await page.getByRole('link', { name: 'Developers', exact: true }).click();
-  await page.getByRole('button', { name: 'Register an app' }).click();
-  await page.getByLabel('Application name', { exact: true }).fill('Notes');
-  await page
-    .getByLabel('Callback URLs', { exact: true })
-    .fill(`${redirectUri}\nhttp://localhost:4351/secondary`);
-  await expect(page.getByLabel('Connection start URL', { exact: true })).toHaveCount(0);
-  const creation = page.waitForResponse(
-    (r) => r.url() === `${origin}/api/developer/apps` && r.request().method() === 'POST',
-  );
-  await page.getByRole('button', { name: 'Create application' }).click();
-  const created = await creation;
-  expect(created.status()).toBe(200);
+  await expect(page.getByRole('link', { name: 'Developers', exact: true })).toHaveCount(0);
+  await page.goto(`${origin}/developers`);
+  await expect(page).toHaveURL(`${origin}/dashboard`);
+  await expect(page.getByRole('heading', { name: 'Connected apps', exact: true })).toBeVisible();
+  // App registration belongs to the integrating backend, outside the user dashboard.
+  const created = await context.request.post(`${origin}/api/auth/oauth2/register`, {
+    headers: { origin },
+    data: {
+      client_name: 'Notes',
+      redirect_uris: [redirectUri, 'http://localhost:4351/secondary'],
+      application_type: 'native',
+      token_endpoint_auth_method: 'client_secret_basic',
+      grant_types: ['authorization_code', 'refresh_token'],
+      response_types: ['code'],
+      scope: 'profile ai:invoke offline_access',
+    },
+  });
+  expect(created.status()).toBe(201);
   const client = await created.json();
   expect(client.client_secret).toBeTruthy();
-  await expect(page.getByRole('heading', { name: 'Save your client secret' })).toBeVisible();
-  await page.getByRole('button', { name: 'I’ve saved it' }).click();
-  await screenshot('developers');
+  expect(await page.content()).not.toContain(client.client_secret);
   const basic = Buffer.from(`${client.client_id}:${client.client_secret}`).toString('base64');
   async function authorizationCode(login: boolean) {
     const verifier = randomBytes(32).toString('base64url');
@@ -246,7 +249,7 @@ try {
   f.state.upstreamError = false;
   await screenshot('account-connected');
   console.log(
-    'PASS real passkeys, app registration, OAuth PKCE, encrypted provider storage, and both gateway APIs',
+    'PASS user-only dashboard, dynamic app registration, real passkeys, OAuth PKCE, encrypted provider storage, and both gateway APIs',
   );
   const crossOrigin = await context.request.delete(`${origin}/api/provider`, {
     headers: { origin: 'https://attacker.example' },
@@ -325,18 +328,15 @@ try {
     ).ok(),
   ).toBe(false);
   await page.goto(`${origin}/developers`);
-  await expect(
-    page.getByText(`${origin}/connect/${client.client_id}`, { exact: true }),
-  ).toBeVisible();
-  await expect(page.getByText('Consent test URL', { exact: true })).toHaveCount(0);
+  await expect(page).toHaveURL(`${origin}/dashboard`);
+  await expect(page.getByRole('button', { name: 'Register an app' })).toHaveCount(0);
   const reauthorized = await authorize(false);
   expect((await generate(refreshed.access_token)).status()).toBe(401);
   expect((await generate(reauthorized.access_token)).status()).toBe(200);
   await page.goto(`${origin}/dashboard`);
   await page.setViewportSize({ width: 390, height: 844 });
   await screenshot('account-mobile');
-  await page.getByRole('link', { name: 'Developers', exact: true }).click();
-  await screenshot('developers-mobile');
+  await expect(page.getByRole('link', { name: 'Developers', exact: true })).toHaveCount(0);
   const deleted = await context.request.delete(`${origin}/api/developer/apps/${client.client_id}`, {
     headers: { origin },
   });

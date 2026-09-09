@@ -16,9 +16,6 @@ export function Shell() {
           <Link to="/dashboard" activeProps={{ className: 'active' }}>
             Account
           </Link>
-          <Link to="/developers" activeProps={{ className: 'active' }}>
-            Developers
-          </Link>
         </nav>
         <Button
           variant="ghost"

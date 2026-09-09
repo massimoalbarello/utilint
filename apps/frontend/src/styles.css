@@ -130,22 +130,17 @@ summary {
 .connection-row p {
   margin-top: 4px;
 }
-.stack,
-.form-stack {
+.stack {
   display: flex;
   flex-direction: column;
   align-items: stretch;
   gap: 16px;
 }
-.actions,
-.form-actions {
+.actions {
   display: flex;
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
-}
-.form-actions {
-  justify-content: flex-end;
 }
 .field {
   display: flex;
@@ -195,10 +190,6 @@ summary {
   font-size: 26px;
   letter-spacing: 0.12em;
   font-weight: 500;
-}
-.integration {
-  padding-top: 8px;
-  font-size: 13px;
 }
 details > .stack,
 details > p {
@@ -267,18 +258,6 @@ summary {
   }
 }
 
-.developer-app {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-.redirect-list {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 12px;
-  overflow-wrap: anywhere;
-}
 .standalone {
   max-width: 520px;
   margin: 64px auto;
