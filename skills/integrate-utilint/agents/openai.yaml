@@ -1,4 +1,4 @@
 interface:
   display_name: "Integrate Utilint"
   short_description: "Add Utilint subscription OAuth to a hosted app"
-  default_prompt: "Use $integrate-utilint to add Utilint sign-in, consent, and gateway access to this app."
+  default_prompt: "Use $integrate-utilint to connect this app to Utilint through dynamic registration, user consent, and gateway calls."

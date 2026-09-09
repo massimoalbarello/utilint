@@ -33,8 +33,6 @@ Use the [Integrate Utilint skill](skills/integrate-utilint/SKILL.md) with your c
 The skill covers automatic registration of one OAuth client per deployment, consent using one
 callback, encrypted per-user tokens, refresh, revocation, and recovery after client deletion.
 Users only sign in, connect ChatGPT, and authorize the app. No developer dashboard is required.
-The skill folder is self-contained for integration instructions; its source links are optional
-references when working from this repository.
 
 Provider access/refresh tokens and account metadata are encrypted with AES-256-GCM, a random
 nonce and owner-bound associated data. HKDF derives a separate vault key from the required
