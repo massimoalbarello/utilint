@@ -1,3 +1,10 @@
+import logo from '../assets/utilint-logo.svg';
+
 export function Brand() {
-  return <span className="wordmark">utilint</span>;
+  return (
+    <span className="brand">
+      <img className="brand-mark" src={logo} width="32" height="32" alt="" />
+      <span className="wordmark">utilint</span>
+    </span>
+  );
 }

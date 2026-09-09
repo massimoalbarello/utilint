@@ -67,6 +67,17 @@ button:not(:disabled),
 summary {
   cursor: pointer;
 }
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+.brand-mark {
+  display: block;
+  flex: none;
+}
 .wordmark {
   font-size: 23px;
   font-weight: 500;
