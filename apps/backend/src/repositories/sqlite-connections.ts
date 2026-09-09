@@ -51,6 +51,12 @@ export function createConnectionRepository(db: SQL): ConnectionRepository {
         if (!deleted.length) return false;
         await tx`DELETE FROM auth_oauthAccessToken WHERE userId=${ownerId} AND clientId=${clientId}`;
         await tx`DELETE FROM auth_oauthRefreshToken WHERE userId=${ownerId} AND clientId=${clientId}`;
+        // Better Auth stores unexchanged OAuth codes alongside other verification records.
+        await tx`DELETE FROM auth_verification WHERE CASE WHEN json_valid(value) THEN
+          json_extract(value, '$.type')='authorization_code'
+          AND json_extract(value, '$.userId')=${ownerId}
+          AND json_extract(value, '$.query.client_id')=${clientId}
+          ELSE 0 END`;
         return true;
       });
     },

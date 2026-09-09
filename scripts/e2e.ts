@@ -70,7 +70,7 @@ try {
   await page.getByRole('button', { name: 'I’ve saved it' }).click();
   await screenshot('developers');
   const basic = Buffer.from(`${client.client_id}:${client.client_secret}`).toString('base64');
-  async function authorize(login: boolean) {
+  async function authorizationCode(login: boolean) {
     const verifier = randomBytes(32).toString('base64url');
     const state = randomBytes(24).toString('hex');
     const params = new URLSearchParams({
@@ -82,6 +82,7 @@ try {
       code_challenge: createHash('sha256').update(verifier).digest('base64url'),
       code_challenge_method: 'S256',
       state,
+      prompt: 'consent',
     });
     await page.goto(`${origin}/api/auth/oauth2/authorize?${params}`);
     if (login) {
@@ -94,16 +95,21 @@ try {
     const result = new URL(page.url());
     expect(result.searchParams.get('state')).toBe(state);
     expect(result.searchParams.get('iss')).toBe(`${origin}/api/auth`);
-    const response = await server.post(`${origin}/api/auth/oauth2/token`, {
+    return {
+      grant_type: 'authorization_code',
+      code: result.searchParams.get('code') ?? '',
+      code_verifier: verifier,
+      redirect_uri: redirectUri,
+      resource: `${origin}/v1`,
+    };
+  }
+  const exchangeCode = (form: Awaited<ReturnType<typeof authorizationCode>>) =>
+    server.post(`${origin}/api/auth/oauth2/token`, {
       headers: { authorization: `Basic ${basic}` },
-      form: {
-        grant_type: 'authorization_code',
-        code: result.searchParams.get('code') ?? '',
-        code_verifier: verifier,
-        redirect_uri: redirectUri,
-        resource: `${origin}/v1`,
-      },
+      form,
     });
+  async function authorize(login: boolean) {
+    const response = await exchangeCode(await authorizationCode(login));
     expect(response.status()).toBe(200);
     return response.json();
   }
@@ -214,9 +220,12 @@ try {
   });
   expect(refreshResponse.status()).toBe(200);
   const refreshed = await refreshResponse.json();
+  const pendingCode = await authorizationCode(false);
+  await page.goto(`${origin}/dashboard`);
   await page.getByRole('button', { name: 'Revoke access' }).click();
   await page.getByRole('button', { name: 'Revoke access' }).click();
   await expect(page.getByText('No connected apps')).toBeVisible();
+  expect((await exchangeCode(pendingCode)).status()).toBe(400);
   expect((await generate(refreshed.access_token)).status()).toBe(401);
   expect(
     (
