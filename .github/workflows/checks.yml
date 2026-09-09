@@ -1,0 +1,63 @@
+name: checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: .bun-version
+      - run: bun install --frozen-lockfile
+      - run: bun run check:all
+      - run: bunx playwright install --with-deps chromium
+      - run: bun run test:e2e
+      - run: bun run build
+      - run: bun scripts/smoke-binary.ts
+      - name: Prepare nibrun binary
+        run: |
+          cp apps/backend/dist/app utilint
+          sha256sum utilint > utilint.sha256
+      - uses: actions/upload-artifact@v7
+        with:
+          name: nibrun-binary
+          path: |
+            utilint
+            utilint.sha256
+          if-no-files-found: error
+
+  publish-nibrun:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: nibrun-release
+      cancel-in-progress: true
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: nibrun-binary
+      - name: Publish rolling prerelease
+        env:
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view nibrun-latest >/dev/null 2>&1; then
+            gh release upload nibrun-latest utilint utilint.sha256 --clobber
+            gh release edit nibrun-latest --prerelease --latest=false \
+              --notes "Built from ${GITHUB_SHA}. Updated after successful checks on main."
+          else
+            gh release create nibrun-latest utilint utilint.sha256 \
+              --target "${GITHUB_SHA}" --title "nibrun deployment" --prerelease --latest=false \
+              --notes "Built from ${GITHUB_SHA}. Updated after successful checks on main."
+          fi
