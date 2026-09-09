@@ -113,7 +113,12 @@ export async function fixture(origin = 'http://localhost:4350', assets = new Map
     chatgpt: createChatGPTProvider(transport),
     now: () => state.now,
   });
-  const auth = createAuth({ database: db, baseUrl: new URL(origin), secret });
+  const auth = createAuth({
+    database: db,
+    baseUrl: new URL(origin),
+    secret,
+    hasProvider: async (ownerId) => Boolean(await repository.credential(ownerId)),
+  });
   const app = createApp({
     auth,
     providers,

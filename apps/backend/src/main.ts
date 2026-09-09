@@ -17,8 +17,13 @@ const env = loadEnv();
 const vault = createVault(env.secret);
 const database = await createSqliteDatabase({ dataFolder: env.dataFolder });
 await runMigrations({ db: database });
-const auth = createAuth({ database, baseUrl: env.baseUrl, secret: env.secret });
 const repository = createConnectionRepository(database);
+const auth = createAuth({
+  database,
+  baseUrl: env.baseUrl,
+  secret: env.secret,
+  hasProvider: async (ownerId) => Boolean(await repository.credential(ownerId)),
+});
 const providers = createProviderService({
   repository,
   vault,

@@ -29,6 +29,12 @@ export function DeveloperAppCard({
         <Field label="Client ID">
           <CopyValue value={app.client_id} />
         </Field>
+        <Field
+          label="Connection URL"
+          hint="Open in a popup or redirect. Add a fresh state, code_challenge, and registered redirect_uri for each connection."
+        >
+          <CopyValue value={`${window.location.origin}/connect/${app.client_id}`} />
+        </Field>
         <Field label="Redirect URLs">
           <div className="redirect-list">
             {app.redirect_uris.map((uri) => (

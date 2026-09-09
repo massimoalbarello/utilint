@@ -2,7 +2,12 @@ import { getOAuthProviderApi, type OAuthOptions, oauthProvider } from '@better-a
 import { passkey } from '@better-auth/passkey';
 import { bunSqlAdapter } from '@ilbertt/better-auth-bun-sql';
 import { betterAuth } from 'better-auth';
-import { APIError, createAuthEndpoint, getAuthoritativeSessionFromCtx } from 'better-auth/api';
+import {
+  APIError,
+  createAuthEndpoint,
+  createAuthMiddleware,
+  getAuthoritativeSessionFromCtx,
+} from 'better-auth/api';
 import type { SQL } from 'bun';
 import { z } from 'zod';
 
@@ -10,15 +15,18 @@ export function createAuth({
   database,
   baseUrl,
   secret,
+  hasProvider,
 }: {
   database: SQL;
   baseUrl: URL;
   secret: string;
+  hasProvider: (ownerId: string) => Promise<boolean>;
 }) {
   const resource = `${baseUrl.origin}/v1`;
   const oauthOptions = {
-    loginPage: '/login',
+    loginPage: '/authorize',
     consentPage: '/authorize',
+    allowPublicClientPrelogin: true,
     scopes: ['profile', 'ai:invoke', 'offline_access'],
     resources: [
       { identifier: resource, name: 'utilint gateway', allowedScopes: ['profile', 'ai:invoke'] },
@@ -51,6 +59,18 @@ export function createAuth({
       '/oauth2/update-client',
     ],
     rateLimit: { enabled: true, window: 60, max: 100 },
+    hooks: {
+      before: createAuthMiddleware(async (ctx) => {
+        if (ctx.path !== '/oauth2/consent' || ctx.body?.accept !== true) return;
+        const session = await getAuthoritativeSessionFromCtx(ctx);
+        if (!session || !(await hasProvider(session.user.id))) {
+          throw APIError.from('FORBIDDEN', {
+            code: 'provider_required',
+            message: 'Connect ChatGPT before authorizing this app.',
+          });
+        }
+      }),
+    },
     plugins: [
       passkey({
         rpID: baseUrl.hostname,
@@ -144,6 +164,8 @@ export function createAuth({
       rotateClientSecret: auth.api.rotateClientSecret,
       deleteOAuthClient: auth.api.deleteOAuthClient,
       getOAuthClientPublic: auth.api.getOAuthClientPublic,
+      getOAuthClientPublicPrelogin: auth.api.getOAuthClientPublicPrelogin,
+      getOAuthConsents: auth.api.getOAuthConsents,
     },
   };
 }

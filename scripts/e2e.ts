@@ -84,13 +84,49 @@ try {
       state,
       prompt: 'consent',
     });
-    await page.goto(`${origin}/api/auth/oauth2/authorize?${params}`);
+    const connect = new URLSearchParams({
+      redirect_uri: redirectUri,
+      state,
+      code_challenge: params.get('code_challenge')!,
+    });
+    await page.goto(`${origin}/connect/${client.client_id}?${connect}`);
     if (login) {
       await page.getByRole('button', { name: 'Sign in with a passkey' }).click();
     }
-    await expect(page.getByRole('heading', { name: 'Connect Notes?' })).toBeVisible();
+    await expect(
+      page.getByRole('heading', {
+        name: /Connect your ChatGPT subscription|Authorize Notes|Notes is already authorized/,
+      }),
+    ).toBeVisible();
+    if (
+      await page.getByRole('heading', { name: 'Connect your ChatGPT subscription' }).isVisible()
+    ) {
+      const oauthQuery = new URL(page.url()).search.slice(1);
+      const premature = await context.request.post(`${origin}/api/auth/oauth2/consent`, {
+        headers: { origin },
+        data: { accept: true, oauth_query: oauthQuery },
+      });
+      expect(premature.status()).toBe(403);
+      const tampered = new URLSearchParams(oauthQuery);
+      tampered.set('client_id', 'attacker');
+      expect(
+        (
+          await context.request.post(`${origin}/api/connect/context`, {
+            headers: { origin },
+            data: { oauthQuery: tampered.toString() },
+          })
+        ).ok(),
+      ).toBe(false);
+      await page.getByRole('button', { name: 'Connect ChatGPT', exact: true }).click();
+      await expect(page.getByLabel('ChatGPT sign-in code')).toHaveText('TEST-12345');
+      await screenshot('consent-connect-chatgpt');
+      f.state.now += 6000;
+    }
+    await expect(
+      page.getByRole('heading', { name: /Authorize Notes|Notes is already authorized/ }),
+    ).toBeVisible({ timeout: 15000 });
     await screenshot('consent');
-    await page.getByRole('button', { name: 'Allow connection' }).click();
+    await page.getByRole('button', { name: /Allow connection|Continue to Notes/ }).click();
     await expect(page).toHaveURL(/localhost:4351\/callback\?/, { timeout: 15000 });
     const result = new URL(page.url());
     expect(result.searchParams.get('state')).toBe(state);
@@ -126,8 +162,8 @@ try {
           : { messages: [{ role: 'user', content: 'Hello' }] }),
       },
     });
-  expect((await generate(tokens.access_token)).status()).toBe(403);
-  expect(f.state.calls).toBe(0);
+  expect((await generate(tokens.access_token)).status()).toBe(200);
+  expect(f.state.calls).toBe(1);
   await page.goto(`${origin}/dashboard`);
   async function connectChatGPT() {
     await page.getByRole('button', { name: 'Connect ChatGPT' }).click();
@@ -140,7 +176,7 @@ try {
     await page.getByRole('button', { name: 'Done', exact: true }).click();
     await expect(page.getByText('fixture@example.test · plus')).toBeVisible();
   }
-  await connectChatGPT();
+  await expect(page.getByText('fixture@example.test · plus')).toBeVisible();
   const dashboard = await (await context.request.get(`${origin}/api/dashboard`)).json();
   expect(dashboard.connections).toEqual([{ clientId: client.client_id, name: 'Notes' }]);
   for (const value of [f.access, f.refresh, 'fixture-private-device-id']) {
