@@ -1,6 +1,6 @@
-# utilint
+# Utility intelligence
 
-[![Deploy on nibrun](https://nibrun.com/button.svg)](https://app.nibrun.com/deploy?name=utilint&binary=https%3A%2F%2Fgithub.com%2Fmassimoalbarello%2Futilint-simple%2Freleases%2Fdownload%2Fnibrun-latest%2Futilint&port=3000&env=BETTER_AUTH_SECRET&minimal)
+[![Deploy on nibrun](https://nibrun.com/button.svg)](https://app.nibrun.com/deploy?name=utilint&binary=https%3A%2F%2Fgithub.com%2Fmassimoalbarello%2Futilint%2Freleases%2Fdownload%2Fnibrun-latest%2Futilint&port=3000&env=BETTER_AUTH_SECRET&minimal)
 
 Connect your ChatGPT subscription and authorize apps to use it. Developers register OAuth apps;
 Utilint keeps provider credentials on the backend and proxies model requests. No usage database,
@@ -14,7 +14,7 @@ in your password manager. Keep the same secret across updates; changing it makes
 credentials unreadable. CI publishes the prerelease after checks pass on `main`.
 
 nibrun supplies the HTTPS hostname and persistent `/app/data` directory automatically. To update
-an existing instance, use `nib run https://github.com/massimoalbarello/utilint-simple/releases/download/nibrun-latest/utilint --app YOUR_APP`.
+an existing instance, use `nib run https://github.com/massimoalbarello/utilint/releases/download/nibrun-latest/utilint --app YOUR_APP`.
 Back up the database and retain the deployment secret separately.
 
 ## Use
