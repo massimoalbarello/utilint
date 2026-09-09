@@ -1,19 +1,9 @@
-import logo from '../assets/utilint-logo.webp';
+import logo from '../assets/utilint-logo.svg';
 
 export function Brand() {
   return (
     <span className="brand">
-      <svg
-        className="brand-mark"
-        width="32"
-        height="32"
-        viewBox="240 263 780 780"
-        aria-hidden="true"
-        focusable="false"
-      >
-        {/* Frame the approved artwork without its presentation margins. */}
-        <image href={logo} width="1254" height="1254" />
-      </svg>
+      <img className="brand-mark" src={logo} width="32" height="32" alt="" />
       <span className="wordmark">utilint</span>
     </span>
   );

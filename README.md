@@ -1,4 +1,4 @@
-<img src="docs/brand/utilint-logo.png" width="112" height="112" alt="Utilint logo" />
+<img src="apps/frontend/src/assets/utilint-logo.svg" width="72" height="72" alt="Utilint logo" />
 
 # Utility intelligence
 
