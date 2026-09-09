@@ -35,6 +35,15 @@ export function DeveloperAppCard({
         >
           <CopyValue value={`${window.location.origin}/connect/${app.client_id}`} />
         </Field>
+        <Field
+          label="Consent test URL"
+          hint="Opens the flow in test mode. No app access is granted."
+        >
+          <CopyValue value={`${window.location.origin}/connect/${app.client_id}/test`} />
+          <a href={`/connect/${app.client_id}/test`} target="_blank" rel="noreferrer">
+            Test consent flow ↗
+          </a>
+        </Field>
         <Field label="Redirect URLs">
           <div className="redirect-list">
             {app.redirect_uris.map((uri) => (

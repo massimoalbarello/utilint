@@ -1,8 +1,33 @@
+import { createHash, randomBytes } from 'node:crypto';
 import type { Auth } from '#lib/auth/better-auth.ts';
+import { CONSENT_TEST_STATE_PREFIX } from '#models/consent.ts';
+import { AppError } from '#models/gateway.ts';
 export function createDeveloperService(auth: Auth) {
   return {
     list(headers: Headers) {
       return auth.api.getOAuthClients({ headers });
+    },
+    async testUrl({
+      headers,
+      clientId,
+      origin,
+    }: {
+      headers: Headers;
+      clientId: string;
+      origin: string;
+    }) {
+      const apps = await auth.api.getOAuthClients({ headers });
+      const app = apps?.find((item) => item.client_id === clientId);
+      const callback = app?.redirect_uris[0];
+      if (!app || app.disabled || !callback) throw new AppError(404, 'not_found', 'App not found.');
+      const url = new URL(`/connect/${encodeURIComponent(clientId)}`, origin);
+      url.search = new URLSearchParams({
+        redirect_uri: callback,
+        state: `${CONSENT_TEST_STATE_PREFIX}${randomBytes(32).toString('base64url')}`,
+        // The verifier is discarded: test links cannot be exchanged for tokens.
+        code_challenge: createHash('sha256').update(randomBytes(32)).digest('base64url'),
+      }).toString();
+      return url.href;
     },
     register({
       headers,

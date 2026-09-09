@@ -1,4 +1,5 @@
 import type { Auth } from '#lib/auth/better-auth.ts';
+import { isConsentTest } from '#models/consent.ts';
 import { AppError } from '#models/gateway.ts';
 import type { ProviderService } from './providers.ts';
 
@@ -24,6 +25,7 @@ export function createConsentService(auth: Auth, providers: ProviderService) {
           query.getAll('resource').every((resource) => consent.resources?.includes(resource)),
       );
       return {
+        test: isConsentTest(oauthQuery),
         name: client.client_name ?? 'App',
         clientId,
         scopes,

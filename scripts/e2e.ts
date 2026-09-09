@@ -250,6 +250,11 @@ try {
       })
     ).ok(),
   ).toBe(false);
+  expect(
+    (
+      await other.request.get(`${origin}/connect/${client.client_id}/test`, { maxRedirects: 0 })
+    ).status(),
+  ).toBe(404);
   await other.close();
   await page.getByRole('button', { name: 'Disconnect', exact: true }).click();
   await page.getByRole('button', { name: 'Disconnect', exact: true }).click();
@@ -288,6 +293,28 @@ try {
       })
     ).ok(),
   ).toBe(false);
+  // Test links exercise the signed consent screen but cannot create a grant, even via a direct POST.
+  await page.goto(`${origin}/developers`);
+  await expect(
+    page.getByText(`${origin}/connect/${client.client_id}/test`, { exact: true }),
+  ).toBeVisible();
+  await page.goto(`${origin}/connect/${client.client_id}/test`);
+  await expect(page.getByText('Test mode · utilint', { exact: true })).toBeVisible();
+  const testQuery = new URL(page.url()).search.slice(1);
+  expect(
+    (
+      await context.request.post(`${origin}/api/auth/oauth2/consent`, {
+        headers: { origin },
+        data: { accept: true, oauth_query: testQuery },
+      })
+    ).status(),
+  ).toBe(403);
+  await page.getByRole('button', { name: 'Allow connection' }).click();
+  await expect(page.getByRole('heading', { name: 'Test complete' })).toBeVisible();
+  expect((await (await context.request.get(`${origin}/api/dashboard`)).json()).connections).toEqual(
+    [],
+  );
+  await screenshot('consent-test-complete');
   const reauthorized = await authorize(false);
   expect((await generate(refreshed.access_token)).status()).toBe(401);
   expect((await generate(reauthorized.access_token)).status()).toBe(200);

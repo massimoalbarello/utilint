@@ -21,6 +21,12 @@ blocked. The URL selects authorization-code flow with `profile ai:invoke offline
 the `/v1` resource, and S256. Do not reuse a fixed state/verifier or put the client secret in it.
 The bare link needs these per-attempt fields before it can start a connection.
 
+The dashboard also shows a directly usable **Consent test URL**, `/connect/CLIENT_ID/test`.
+Open it while signed in as the app's developer. It creates a fresh signed request and shows the
+real progressive flow in test mode, then finishes inside Utilint. It never grants app access,
+issues tokens, or calls your app callback. Use the app integration to test the complete token
+exchange. The `utilint-test_` state prefix is reserved for these requests.
+
 The hosted flow checks the session, offers passkey sign-in or signup, connects ChatGPT if needed,
 and asks for consent. Existing connections skip completed steps. An existing app grant shows
 **already authorized** and a Continue button. It does not silently grant new scopes.

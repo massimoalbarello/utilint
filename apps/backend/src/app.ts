@@ -92,7 +92,7 @@ export function createApp({
     .patch('/api/auth/*', ({ request }) => auth.handler(request), { parse: 'none' })
     .delete('/api/auth/*', ({ request }) => auth.handler(request), { parse: 'none' })
     .get('/.well-known/*', ({ request }) => auth.handler(request))
-    .use(connectRoutes({ auth, providers, origin }))
+    .use(connectRoutes({ auth, providers, developers, origin }))
     .use(dashboardRoutes({ auth, dashboard, developers, providers, origin }))
     .use(gatewayRoutes({ auth, gateway }))
     .get('/*', ({ path }) => {

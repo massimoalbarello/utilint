@@ -2,19 +2,35 @@ import { Elysia, t } from 'elysia';
 import type { Auth } from '#lib/auth/better-auth.ts';
 import { AppError } from '#models/gateway.ts';
 import { createConsentService } from '#services/consent.ts';
+import type { DeveloperService } from '#services/developers.ts';
 import type { ProviderService } from '#services/providers.ts';
 
 export function connectRoutes({
   auth,
   providers,
+  developers,
   origin,
 }: {
   auth: Auth;
   providers: ProviderService;
+  developers: DeveloperService;
   origin: string;
 }) {
   const consent = createConsentService(auth, providers);
   return new Elysia()
+    .get(
+      '/connect/:clientId/test',
+      async ({ request, params, redirect }) => {
+        if (!(await auth.api.getSession({ headers: request.headers }))) {
+          const target = `/connect/${encodeURIComponent(params.clientId)}/test`;
+          return redirect(`/login?redirect=${encodeURIComponent(target)}`);
+        }
+        return redirect(
+          await developers.testUrl({ headers: request.headers, clientId: params.clientId, origin }),
+        );
+      },
+      { params: t.Object({ clientId: t.String({ minLength: 1, maxLength: 200 }) }) },
+    )
     .get(
       '/connect/:clientId',
       ({ params, query, redirect }) => {

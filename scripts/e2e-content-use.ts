@@ -174,8 +174,22 @@ try {
   await expect(page.getByText('Hello from ChatGPT.', { exact: true })).toBeVisible({
     timeout: 20000,
   });
-  await page.screenshot({ path: resolve('outputs/content-use-summary.png'), fullPage: true });
+  await page.screenshot({
+    path: resolve('outputs/content-use-summary.png'),
+    fullPage: true,
+    animations: 'disabled',
+  });
   expect(f.state.calls).toBe(1);
+  await expect(page.getByRole('button', { name: 'Summarized', exact: true })).toBeDisabled();
+  await page.reload();
+  await expect(page.getByRole('button', { name: 'Summarized', exact: true })).toBeDisabled();
+  const duplicate = await page.evaluate(
+    async (id) => (await fetch(`/api/records/${id}/summary`, { method: 'POST' })).json(),
+    created.id,
+  );
+  expect(duplicate.summary.text).toBe('Hello from ChatGPT.');
+  expect(f.state.calls).toBe(1);
+  await page.getByRole('button', { name: 'View summary', exact: true }).click();
   const stored = JSON.stringify(await db`SELECT * FROM utilint_secrets`);
   expect(stored).not.toContain(client.client_secret);
   expect(stored).not.toContain('access_token');
@@ -184,6 +198,8 @@ try {
     true,
   );
   await page.goto(`${c}/settings`);
+  await expect(page.getByText('Developer setup', { exact: true })).toHaveCount(0);
+  await page.screenshot({ path: resolve('outputs/content-use-connected.png'), fullPage: true });
   await page.getByRole('button', { name: 'Disconnect utilint', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Connect utilint', exact: true })).toBeVisible();
   const returningEvent = page.waitForEvent('popup');
@@ -195,6 +211,7 @@ try {
   await returning.getByRole('button', { name: 'Continue to Content Use' }).click();
   await expect(page.getByRole('button', { name: 'Disconnect utilint' })).toBeVisible();
   await page.goto(`${c}/records/${created.id}`);
+  await expect(page.getByRole('button', { name: 'Summarized', exact: true })).toBeDisabled();
   await page.getByRole('button', { name: 'View summary' }).click();
   await expect(page.getByText('Hello from ChatGPT.', { exact: true })).toBeVisible();
   await page.setViewportSize({ width: 390, height: 844 });

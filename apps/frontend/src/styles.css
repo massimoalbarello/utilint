@@ -322,14 +322,8 @@ summary {
   border-radius: 50%;
   font-size: 11px;
 }
-.consent-note,
-.consent-footer {
+.consent-note {
   font-size: 12px;
   line-height: 1.6;
   color: var(--muted-foreground);
-}
-.consent-footer {
-  margin-top: 28px;
-  padding-top: 18px;
-  border-top: 1px solid var(--border);
 }

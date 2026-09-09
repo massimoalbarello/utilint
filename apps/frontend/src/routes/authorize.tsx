@@ -15,6 +15,7 @@ function Authorize() {
   const qc = useQueryClient();
   const options = consentOptions(window.location.search.slice(1));
   const context = useQuery(options);
+  const [testComplete, setTestComplete] = useState(false);
   const [signup, setSignup] = useState(false);
   const [loginId, setLoginId] = useState<string | null>(null);
   const login = useMutation({
@@ -29,16 +30,31 @@ function Authorize() {
     onSuccess: (attempt) => setLoginId(attempt.id),
   });
   const consent = useMutation({
-    mutationFn: (accept: boolean) =>
-      authorizeApp({ accept, scope: context.data?.scopes.join(' ') ?? '' }),
-    onSuccess: (url) => window.location.assign(url),
+    mutationFn: async (accept: boolean) => {
+      if (context.data?.test) {
+        setTestComplete(true);
+        return null;
+      }
+      return authorizeApp({ accept, scope: context.data?.scopes.join(' ') ?? '' });
+    },
+    onSuccess: (url) => {
+      if (url) window.location.assign(url);
+    },
   });
   const data = context.data;
   const step = !data?.signedIn ? 0 : !data.provider ? 1 : 2;
   return (
     <AuthLayout>
-      <p className="consent-eyebrow">Connect with utilint</p>
-      {context.error ? (
+      <p className="consent-eyebrow">
+        {data?.test ? 'Test mode · utilint' : 'Connect with utilint'}
+      </p>
+      {testComplete ? (
+        <>
+          <h1>Test complete</h1>
+          <p>No app access was granted.</p>
+          <a href="/developers">Back to Developers</a>
+        </>
+      ) : context.error ? (
         <>
           <h1>Connection expired or invalid</h1>
           <Notice error>Close this window and start again from the app.</Notice>
@@ -58,9 +74,7 @@ function Authorize() {
           {!data.signedIn ? (
             <>
               <h1>{signup ? 'Create your utilint account' : `Continue to ${data.name}`}</h1>
-              <p>
-                Use your ChatGPT subscription in {data.name}. Start with a passkey on your device.
-              </p>
+              <p>Sign in or create an account to continue.</p>
               <Button pending={login.isPending} onClick={() => login.mutate(signup)}>
                 <Fingerprint size={18} />
                 {signup ? 'Create account with a passkey' : 'Sign in with a passkey'}
@@ -72,10 +86,7 @@ function Authorize() {
           ) : !data.provider ? (
             <>
               <h1>Connect your ChatGPT subscription</h1>
-              <p>
-                {data.name} will use your subscription for its AI features. Your ChatGPT credentials
-                stay in utilint.
-              </p>
+              <p>Use your ChatGPT plan in {data.name}.</p>
               {loginId ? (
                 <ChatGPTLogin
                   loginId={loginId}
@@ -97,22 +108,18 @@ function Authorize() {
               </h1>
               <p>
                 {data.authorized
-                  ? 'Your connection is ready. Continue back to the app.'
-                  : 'Allow this app to use your ChatGPT subscription to power its AI features.'}
+                  ? 'You’re ready to go.'
+                  : 'Use your ChatGPT subscription in this app.'}
               </p>
               {!data.authorized && (
                 <>
                   <ul className="permission-list">
-                    {data.scopes.includes('profile') && <li>Identify your utilint account.</li>}
-                    {data.scopes.includes('ai:invoke') && (
-                      <li>Send model requests using your subscription allowance.</li>
-                    )}
-                    {data.scopes.includes('offline_access') && (
-                      <li>Stay connected between visits.</li>
-                    )}
+                    {data.scopes.includes('profile') && <li>Access your basic profile.</li>}
+                    {data.scopes.includes('ai:invoke') && <li>Use your ChatGPT allowance.</li>}
+                    {data.scopes.includes('offline_access') && <li>Stay connected.</li>}
                   </ul>
                   <p className="consent-note">
-                    Usage counts toward your ChatGPT limits. Revoke access anytime in utilint.
+                    Counts toward your plan limits. Revoke anytime in utilint.
                   </p>
                 </>
               )}
@@ -133,7 +140,6 @@ function Authorize() {
               Cancel
             </Button>
           )}
-          <p className="consent-footer">Your subscription. Your apps. You're in control.</p>
         </>
       )}
     </AuthLayout>
