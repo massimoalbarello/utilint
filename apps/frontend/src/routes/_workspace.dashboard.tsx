@@ -2,7 +2,6 @@ import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-q
 import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
 import { ChatGPTLogin } from '../components/chatgpt-login';
-import { PageHeader } from '../components/layout/page-header';
 import { Panel } from '../components/panel';
 import { Button } from '../components/ui/button';
 import { ConfirmAction } from '../components/ui/confirm-action';
@@ -35,7 +34,6 @@ function Dashboard() {
   });
   return (
     <>
-      <PageHeader title="Account" />
       <Panel title="ChatGPT">
         {loginId ? (
           <ChatGPTLogin loginId={loginId} onClose={() => setLoginId(null)} />

@@ -19,7 +19,7 @@ Back up the database and retain the deployment secret separately.
 
 ## Use
 
-Create a passkey account. In **Account**, connect ChatGPT using OpenAI's device code. This uses
+Create a passkey account, then connect ChatGPT using OpenAI's device code. This uses
 the Codex allowance included in an eligible ChatGPT plan. No CLI installation is needed. You can
 disconnect/reconnect ChatGPT and revoke individual apps. Requests already sent may finish.
 

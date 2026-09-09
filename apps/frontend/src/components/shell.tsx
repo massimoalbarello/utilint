@@ -12,11 +12,6 @@ export function Shell() {
         <Link to="/dashboard">
           <Brand />
         </Link>
-        <nav aria-label="Workspace">
-          <Link to="/dashboard" activeProps={{ className: 'active' }}>
-            Account
-          </Link>
-        </nav>
         <Button
           variant="ghost"
           onClick={async () => {

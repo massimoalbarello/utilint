@@ -79,19 +79,9 @@ summary {
   padding: 0 28px;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 40px;
   border-bottom: 1px solid #e5e5e5;
-}
-.workspace-header nav {
-  display: flex;
-  gap: 24px;
-  flex: 1;
-  font-size: 13px;
-  color: #737373;
-}
-.workspace-header nav .active {
-  color: #171717;
-  font-weight: 500;
 }
 .page-content {
   max-width: 840px;
@@ -100,13 +90,6 @@ summary {
   display: flex;
   flex-direction: column;
   gap: 24px;
-}
-.page-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 8px;
 }
 .panel-heading {
   display: flex;
@@ -237,16 +220,9 @@ summary {
     gap: 24px;
     flex-wrap: wrap;
   }
-  .workspace-header nav {
-    gap: 16px;
-  }
   .page-content {
     padding: 32px 20px 56px;
     gap: 20px;
-  }
-  .page-header {
-    align-items: flex-start;
-    flex-wrap: wrap;
   }
   .connection-row {
     align-items: flex-start;
