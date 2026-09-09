@@ -21,9 +21,9 @@ converting a private workspace into a multi-user app or changing its sign-in met
   restarts. Serialize first registration and replacement; concurrent users must share the result.
 - Each **app user** owns their grant, access/refresh tokens, and model requests. Bind pending
   authorization attempts to that user's current app session and the OAuth client/issuer.
-- Configure the Utilint origin on the backend. The hosted instance is
-  `https://utilint-crrxrd.nibrun.app`; hosts can choose their own instance. Use HTTPS, with HTTP
-  loopback only for local development. Do not accept an arbitrary provider origin from a callback.
+- Default the backend Utilint origin to `https://utilint.com`, overridable with `UTILINT_URL`.
+  Examples below use `UTILINT_ORIGIN` for that resolved origin. Use HTTPS, with HTTP loopback only
+  for local development. Do not accept an arbitrary provider origin from a callback.
 - Keep client secrets and user tokens encrypted on the backend. Neither belongs in frontend
   JavaScript, browser storage, logs, copied consent links, or popup messages.
 
