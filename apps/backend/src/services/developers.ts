@@ -4,6 +4,9 @@ import type { DeveloperRepository } from '#repositories/developers.ts';
 
 export function createDeveloperService(auth: Auth, repository: DeveloperRepository) {
   return {
+    async registrationStatus(clientId: string) {
+      return { clientId, status: await repository.registrationStatus(clientId) };
+    },
     list(headers: Headers) {
       return auth.api.getOAuthClients({ headers });
     },

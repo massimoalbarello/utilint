@@ -107,3 +107,23 @@ test('DCR rate limit stops repeated registration attempts', async () => {
     await f.close();
   }
 });
+
+test('public registration status distinguishes missing and disabled clients without exposing credentials', async () => {
+  const f = await fixture();
+  try {
+    const registered = await register(f.app, metadata);
+    const { client_id: clientId } = (await registered.json()) as { client_id: string };
+    const status = () =>
+      f.app.handle(new Request(`http://localhost:4350/api/connect/clients/${clientId}/status`));
+    expect(await (await status()).json()).toEqual({ clientId, status: 'active' });
+    await f.db`UPDATE auth_oauthClient SET disabled=1 WHERE clientId=${clientId}`;
+    expect(await (await status()).json()).toEqual({ clientId, status: 'disabled' });
+    await f.db`DELETE FROM auth_oauthClient WHERE clientId=${clientId}`;
+    const missing = await status();
+    expect(missing.status).toBe(200);
+    expect(missing.headers.get('cache-control')).toBe('no-store');
+    expect(await missing.json()).toEqual({ clientId, status: 'missing' });
+  } finally {
+    await f.close();
+  }
+});

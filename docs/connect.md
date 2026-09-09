@@ -24,6 +24,16 @@ code exchange. Registration creates an app identity; it does not grant access to
 Each user must sign in, connect ChatGPT, and approve the app. The app name is self-declared;
 the consent page also shows the registered callback's host.
 
+Content Use checks its saved registration before starting consent. `GET
+/api/connect/clients/CLIENT_ID/status` returns `{ "clientId": "CLIENT_ID", "status": "active" }`,
+`"missing"`, or `"disabled"`, with `Cache-Control: no-store`. This Utilint-specific public endpoint
+exposes only registration status. A confirmed missing client can be registered again through DCR;
+persist the replacement atomically and bind tokens and pending attempts to their original client.
+A replacement requires fresh user consent. Disabled clients, failed lookups, and ordinary HTTP
+404/429/5xx responses must not trigger registration. Revoking a user's grant leaves the app
+registration intact. Start recovery from the app's Connect button; links to deleted client IDs
+cannot safely discover the original app callback.
+
 Only confidential backend clients using `client_secret_basic` are supported. Registration is
 limited to five requests per minute per IP, at most 10 exact callback URLs, and a name up to 80
 characters. HTTPS callbacks are required for web apps; localhost development uses

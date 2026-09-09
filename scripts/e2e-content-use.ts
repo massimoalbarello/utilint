@@ -284,9 +284,60 @@ try {
     { clientId: client.clientId },
   ]);
   expect(await (await context.request.get(`${u}/api/developer/apps`)).json()).toEqual([]);
+  // A second disposable deployment exercises real registration and developer deletion.
+  // Its initial registrations use the already passkey-authenticated browser session so the
+  // developer can delete them through the normal authorized endpoint (no admin/auth bypass).
+  const recoveryDb = await createSqliteDatabase({ dataFolder: join(folder, 'recovery') });
+  try {
+    await migrate(recoveryDb);
+    const recoveryClient = createUtilintClient({
+      repository: new SqliteUtilintRepository(recoveryDb),
+      vault: createUtilintVault(crypto.randomUUID().repeat(2)),
+      callback: `${c}/api/utilint/callback`,
+      utilintOrigin: u,
+      transport: (async (url, init) => {
+        if (String(url) !== `${u}/api/auth/oauth2/register`) return fetch(url, init);
+        const response = await context.request.post(String(url), {
+          headers: { origin: u, 'content-type': 'application/json' },
+          data: String(init?.body),
+        });
+        return new Response(await response.text(), {
+          status: response.status(),
+          headers: { 'content-type': 'application/json' },
+        });
+      }) as typeof fetch,
+    });
+    const original = await recoveryClient.get();
+    const removed = await context.request.delete(`${u}/api/developer/apps/${original.clientId}`, {
+      headers: { origin: u },
+    });
+    expect(removed.ok()).toBe(true);
+    const [replacement, concurrent] = await Promise.all([
+      recoveryClient.get(),
+      recoveryClient.get(),
+    ]);
+    expect(replacement.clientId).not.toBe(original.clientId);
+    expect(concurrent.clientId).toBe(replacement.clientId);
+    expect((await recoveryClient.get()).clientId).toBe(replacement.clientId);
+    expect(
+      Array.from(
+        await f.db`SELECT clientId FROM auth_oauthClient WHERE clientId=${original.clientId}`,
+      ),
+    ).toEqual([]);
+    expect(await f.db`SELECT clientId FROM auth_oauthClient`).toHaveLength(2);
+    expect(
+      (
+        await context.request.delete(`${u}/api/developer/apps/${replacement.clientId}`, {
+          headers: { origin: u },
+        })
+      ).ok(),
+    ).toBe(true);
+  } finally {
+    await recoveryDb.close();
+  }
   expect(errors).toEqual([]);
   console.log(
-    'PASS two-app browser flow: deployment-owned dynamic registration → no developer setup → dashboard summary → Utilint signup → ChatGPT → consent → server exchange → gateway summary → returning-user skip → mobile → signed-out real link → second Utilint user authorization with the same app client',
+    'PASS two-app browser flow: deployment-owned dynamic registration → no developer setup → dashboard summary → Utilint signup → ChatGPT → consent → server exchange → gateway summary → returning-user skip → mobile → signed-out real link → second Utilint user authorization with the same app client → deleted client automatically replaced',
   );
 } catch (error) {
   for (const page of context.pages())

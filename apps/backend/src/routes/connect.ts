@@ -19,6 +19,17 @@ export function connectRoutes({
   const consent = createConsentService(auth, providers);
   return new Elysia()
     .get(
+      '/api/connect/clients/:clientId/status',
+      ({ params }) => developers.registrationStatus(params.clientId),
+      {
+        params: t.Object({ clientId: t.String({ minLength: 1, maxLength: 200 }) }),
+        response: t.Object({
+          clientId: t.String(),
+          status: t.Union([t.Literal('active'), t.Literal('missing'), t.Literal('disabled')]),
+        }),
+      },
+    )
+    .get(
       '/connect/:clientId/test',
       ({ params, redirect }) => redirect(`/connect/${encodeURIComponent(params.clientId)}`, 302),
       { params: t.Object({ clientId: t.String({ minLength: 1, maxLength: 200 }) }) },
