@@ -3,7 +3,7 @@
 [![Deploy on nibrun](https://nibrun.com/button.svg)](https://app.nibrun.com/deploy?name=utilint&binary=https%3A%2F%2Fgithub.com%2Fmassimoalbarello%2Futilint%2Freleases%2Fdownload%2Fnibrun-latest%2Futilint&port=3000&env=BETTER_AUTH_SECRET&minimal)
 
 Connect your ChatGPT subscription and authorize apps to use it. Developers register OAuth apps;
-Utilint keeps provider credentials on the backend and proxies model requests. No usage database,
+utilint keeps provider credentials on the backend and proxies model requests. No usage database,
 budgets, or paid API fallback.
 
 ## Deploy
@@ -33,7 +33,7 @@ Use authorization code with S256 PKCE and `client_secret_basic` from your app's 
 | Resource / OpenAI SDK base URL | `https://YOUR_INSTANCE/v1` |
 | Scopes | `profile ai:invoke offline_access` |
 
-Send the user's **Utilint access token** as Bearer authorization to `GET /v1/models`,
+Send the user's **utilint access token** as Bearer authorization to `GET /v1/models`,
 `POST /v1/responses` or `POST /v1/chat/completions`. Select a model returned by `/v1/models`.
 Text, function tools and streaming are supported. Subscription requests use `store: false`;
 output-length parameters are prompt targets. Unsupported fields are rejected. The subscription

@@ -7,7 +7,7 @@ import type { ProviderService } from './providers.ts';
 export function createGatewayService(repository: ConnectionRepository, providers: ProviderService) {
   async function connection(actor: Actor) {
     if (!(await repository.authorized(actor)))
-      throw new AppError(403, 'app_not_authorized', 'Authorize this app in Utilint.');
+      throw new AppError(403, 'app_not_authorized', 'Authorize this app in utilint.');
     const provider = await providers.connection(actor.ownerId);
     // A revoke/disconnect may complete while the provider refreshes its token.
     if (!(await repository.authorized(actor)) || !(await repository.credential(actor.ownerId)))

@@ -108,6 +108,6 @@ export function createApp({
       const index = assets.get('index.html');
       return index
         ? new Response(index, { headers: { 'content-type': 'text/html; charset=utf-8' } })
-        : new Response('Utilint frontend is running in Vite.', { status: 200 });
+        : new Response('utilint frontend is running in Vite.', { status: 200 });
     });
 }

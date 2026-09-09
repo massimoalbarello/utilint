@@ -27,7 +27,7 @@ export function dashboardRoutes({
         !['GET', 'HEAD', 'OPTIONS'].includes(request.method) &&
         request.headers.get('origin') !== origin
       )
-        throw new AppError(403, 'invalid_origin', 'Use the Utilint dashboard to make this change.');
+        throw new AppError(403, 'invalid_origin', 'Use the utilint dashboard to make this change.');
       return { ownerId: session.user.id, sessionId: session.session.id };
     })
     .get('/dashboard', ({ ownerId }) => dashboard.overview(ownerId))

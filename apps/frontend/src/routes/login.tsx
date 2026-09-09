@@ -52,7 +52,7 @@ function Login() {
         {search.signup ? 'Create account with a passkey' : 'Sign in with a passkey'}
       </Button>
       <div className="auth-switch">
-        {search.signup ? 'Already registered?' : 'New to Utilint?'}{' '}
+        {search.signup ? 'Already registered?' : 'New to utilint?'}{' '}
         <a href={`/login?${toggle.toString()}`}>
           {search.signup ? 'Sign in' : 'Create an account'}
         </a>

@@ -152,13 +152,13 @@ export function createProviderService({
       return exclusive(ownerId, async () => {
         const credential = await repository.credential(ownerId);
         if (!credential)
-          throw new AppError(403, 'provider_not_connected', 'Connect ChatGPT in Utilint.');
+          throw new AppError(403, 'provider_not_connected', 'Connect ChatGPT in utilint.');
         let tokens = read(ownerId, credential.encrypted);
         if (tokens.expires <= now() + 60_000) {
           try {
             tokens = await auth.refresh(tokens);
           } catch {
-            throw new AppError(403, 'reconnect_required', 'Reconnect ChatGPT in Utilint.');
+            throw new AppError(403, 'reconnect_required', 'Reconnect ChatGPT in utilint.');
           }
           if (
             !(await repository.replaceCredential(

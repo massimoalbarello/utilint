@@ -32,11 +32,11 @@ function Authorize() {
     <AuthLayout>
       <h1>Connect {client.client_name ?? 'this app'}?</h1>
       <p>
-        This app can use your ChatGPT subscription through Utilint. Your ChatGPT credentials stay in
-        Utilint.
+        This app can use your ChatGPT subscription through utilint. Your ChatGPT credentials stay in
+        utilint.
       </p>
       <ul className="permission-list">
-        {search.scope.split(' ').includes('profile') && <li>Identify your Utilint account.</li>}
+        {search.scope.split(' ').includes('profile') && <li>Identify your utilint account.</li>}
         {search.scope.split(' ').includes('ai:invoke') && (
           <li>Send model requests using your subscription.</li>
         )}

@@ -58,7 +58,7 @@ export function createChatGPTAuth(fetcher: typeof fetch = fetch) {
       throw new AppError(
         403,
         'chatgpt_reconnect_required',
-        'ChatGPT could not authorize this connection. Connect ChatGPT again in Utilint.',
+        'ChatGPT could not authorize this connection. Connect ChatGPT again in utilint.',
       );
     }
     const data = z
@@ -69,7 +69,7 @@ export function createChatGPTAuth(fetcher: typeof fetch = fetch) {
       })
       .parse(await boundedJson(response));
     // These claims are metadata from a token obtained directly from the pinned
-    // OAuth server. They never establish a Utilint user identity or session.
+    // OAuth server. They never establish a utilint user identity or session.
     const claims = identitySchema.parse(
       JSON.parse(Buffer.from(data.access_token.split('.')[1] ?? '', 'base64url').toString('utf8')),
     );

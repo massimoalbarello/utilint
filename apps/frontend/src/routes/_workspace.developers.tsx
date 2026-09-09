@@ -80,7 +80,7 @@ function Developers() {
             <CopyValue value="profile ai:invoke offline_access" />
           </div>
           <p>
-            Send the user’s Utilint access token as Bearer authorization. Keep your client secret on
+            Send the user’s utilint access token as Bearer authorization. Keep your client secret on
             your backend.
           </p>
         </div>

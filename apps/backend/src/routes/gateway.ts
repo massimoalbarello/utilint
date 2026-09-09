@@ -7,7 +7,7 @@ export function gatewayRoutes({ auth, gateway }: { auth: Auth; gateway: GatewayS
     .resolve(async ({ request }) => {
       const match = /^Bearer ([^\s]+)$/i.exec(request.headers.get('authorization') ?? '');
       if (!match?.[1])
-        throw new AppError(401, 'invalid_token', 'A Utilint OAuth access token is required.');
+        throw new AppError(401, 'invalid_token', 'A utilint OAuth access token is required.');
       try {
         return { actor: await auth.api.verifyGatewayToken({ body: { token: match[1] } }) };
       } catch {

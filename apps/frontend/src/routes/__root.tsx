@@ -16,7 +16,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   notFoundComponent: () => (
     <main className="standalone">
       <h1>Page not found</h1>
-      <Link to="/">Return to Utilint</Link>
+      <Link to="/">Return to utilint</Link>
     </main>
   ),
 });

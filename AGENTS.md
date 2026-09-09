@@ -1,4 +1,4 @@
-# Utilint engineering principles
+# utilint engineering principles
 
 Read the nearest nested `AGENTS.md` before changing a workspace. A nested guide applies only to its
 subtree and overrides broader guidance.

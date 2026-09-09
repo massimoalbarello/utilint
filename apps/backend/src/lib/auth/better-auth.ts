@@ -21,7 +21,7 @@ export function createAuth({
     consentPage: '/authorize',
     scopes: ['profile', 'ai:invoke', 'offline_access'],
     resources: [
-      { identifier: resource, name: 'Utilint gateway', allowedScopes: ['profile', 'ai:invoke'] },
+      { identifier: resource, name: 'utilint gateway', allowedScopes: ['profile', 'ai:invoke'] },
     ],
     clientRegistrationDefaultResources: [resource],
     clientRegistrationRequirePKCE: true,
@@ -38,7 +38,7 @@ export function createAuth({
       Boolean(user) && action !== 'configure-client-credentials-scopes',
   } satisfies OAuthOptions<['profile', 'ai:invoke', 'offline_access']>;
   const auth = betterAuth({
-    appName: 'Utilint',
+    appName: 'utilint',
     baseURL: baseUrl.origin,
     basePath: '/api/auth',
     secret,
@@ -54,14 +54,14 @@ export function createAuth({
     plugins: [
       passkey({
         rpID: baseUrl.hostname,
-        rpName: 'Utilint',
+        rpName: 'utilint',
         origin: baseUrl.origin,
         authenticatorSelection: { residentKey: 'required', userVerification: 'required' },
         registration: {
           requireSession: false,
           resolveUser: () => {
             const id = Bun.randomUUIDv7();
-            return { id, name: `utilint-${id}`, displayName: 'Utilint member' };
+            return { id, name: `utilint-${id}`, displayName: 'utilint member' };
           },
           afterVerification: async ({ ctx, verification, user }) => {
             if (!verification.registrationInfo?.userVerified)
@@ -80,7 +80,7 @@ export function createAuth({
               await ctx.context.internalAdapter.createUser(
                 {
                   id: user.id,
-                  name: 'Utilint member',
+                  name: 'utilint member',
                   email: `${user.id}@users.utilint.invalid`,
                   emailVerified: false,
                 },
@@ -123,7 +123,7 @@ export function createAuth({
               ) {
                 throw APIError.from('UNAUTHORIZED', {
                   code: 'invalid_token',
-                  message: 'A user access token for the Utilint gateway is required.',
+                  message: 'A user access token for the utilint gateway is required.',
                 });
               }
               return { ownerId: String(claims.sub), clientId: String(claims.client_id) };
