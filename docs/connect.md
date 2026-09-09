@@ -1,10 +1,40 @@
 # Connect with utilint
 
-Register an app in **Developers** with its exact **Callback URL** and keep the client secret on
-its backend. That callback handles both starting the connection and receiving authorization.
-No separate start URL is needed.
+Register **one client per hosted app**, not per end user. Your backend can do this automatically
+using RFC 7591 dynamic client registration, without a Utilint account:
 
-The dashboard gives you one **Consent URL**. Embed this exact link in your app as a button or
+```http
+POST /api/auth/oauth2/register
+Content-Type: application/json
+
+{
+  "client_name": "Your app",
+  "redirect_uris": ["https://your-app.com/api/utilint/callback"],
+  "application_type": "web",
+  "token_endpoint_auth_method": "client_secret_basic",
+  "grant_types": ["authorization_code", "refresh_token"],
+  "response_types": ["code"],
+  "scope": "profile ai:invoke offline_access"
+}
+```
+
+Persist the returned `client_id` and one-time `client_secret` securely on the backend and reuse
+them for every user and across restarts. Use a maintained OAuth library for registration and
+code exchange. Registration creates an app identity; it does not grant access to any user.
+Each user must sign in, connect ChatGPT, and approve the app. The app name is self-declared;
+the consent page also shows the registered callback's host.
+
+Only confidential backend clients using `client_secret_basic` are supported. Registration is
+limited to five requests per minute per IP, at most 10 exact callback URLs, and a name up to 80
+characters. HTTPS callbacks are required for web apps; localhost development uses
+`application_type: native`. S256 PKCE remains required. No client credentials grant is enabled.
+Discovery advertises the registration endpoint in the OAuth authorization-server metadata.
+
+Alternatively, the developer can register the app once in **Developers** and save its one-time
+secret on their backend. End users never need the developer dashboard. The exact **Callback URL**
+handles both starting the connection and receiving authorization. No separate start URL is needed.
+
+Build the **Consent URL** from the returned client ID (the dashboard also shows it for manually registered apps). Embed this exact link in your app as a button or
 open it from the dashboard to authorize your own account:
 
 ```

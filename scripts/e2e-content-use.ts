@@ -16,6 +16,7 @@ import { AccountsService } from '../../content-use/apps/backend/src/services/acc
 import { OwnerRegistrationService } from '../../content-use/apps/backend/src/services/owner-registration/service';
 import { PlaylistsService } from '../../content-use/apps/backend/src/services/playlists/service';
 import { RecordsService } from '../../content-use/apps/backend/src/services/records/service';
+import { createUtilintClient } from '../../content-use/apps/backend/src/services/utilint/client';
 import { createUtilintService } from '../../content-use/apps/backend/src/services/utilint/service';
 import { fixture } from '../apps/backend/test/support/fixture';
 
@@ -62,7 +63,16 @@ const jobs = {
   mediaPath: () => '',
 };
 const auth = createAuth({ database: db, baseUrl: new URL(c), secret });
+const clientRepository = new SqliteUtilintRepository(db);
+const clientVault = createUtilintVault(secret);
+const deploymentClient = createUtilintClient({
+  repository: clientRepository,
+  vault: clientVault,
+  callback: `${c}/api/utilint/callback`,
+  utilintOrigin: u,
+});
 const utilint = createUtilintService({
+  client: deploymentClient,
   repository: new SqliteUtilintRepository(db),
   records: repo,
   vault: createUtilintVault(secret),
@@ -116,21 +126,6 @@ try {
   await developer.goto(`${u}/login?signup=true`);
   await developer.getByRole('button', { name: 'Create account with a passkey' }).click();
   await expect(developer).toHaveURL(`${u}/dashboard`);
-  const client = await developer.evaluate(
-    async (callback) =>
-      (
-        await fetch('/api/developer/apps', {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({
-            name: 'Content Use',
-            redirectUris: [callback],
-          }),
-        })
-      ).json(),
-    `${c}/api/utilint/callback`,
-  );
-  expect(client.client_secret).toBeTruthy();
   await developer.getByRole('button', { name: 'Sign out' }).click();
   const page = await context.newPage();
   await passkey(page);
@@ -138,12 +133,10 @@ try {
   await page.getByRole('button', { name: 'Create your passkey' }).click();
   await expect(page.getByRole('heading', { name: 'Records', exact: true })).toBeVisible();
   await page.goto(`${c}/settings`);
-  await page.getByLabel('utilint URL', { exact: true }).fill(u);
-  await page.getByLabel('Client ID', { exact: true }).fill(client.client_id);
-  await page.getByLabel('Client secret', { exact: true }).fill(client.client_secret);
-  await page.getByRole('button', { name: 'Save utilint app' }).click();
-  await expect(page.getByText('Ready to connect', { exact: true })).toBeVisible();
-  await expect(page.getByText('Connection start URL', { exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Connect utilint', exact: true })).toBeVisible();
+  await expect(page.getByText('Developer setup', { exact: true })).toHaveCount(0);
+  await expect(page.getByLabel('Client ID', { exact: true })).toHaveCount(0);
+  expect(await f.db`SELECT id FROM auth_oauthClient`).toHaveLength(0);
   // Missing, malformed, and mixed responses must fail rather than restarting OAuth.
   for (const query of [
     '',
@@ -212,9 +205,13 @@ try {
   expect(duplicate.summary.text).toBe('Hello from ChatGPT.');
   expect(f.state.calls).toBe(1);
   await page.getByRole('button', { name: 'View summary', exact: true }).click();
-  const stored = JSON.stringify(await db`SELECT * FROM utilint_secrets`);
-  expect(stored).not.toContain(client.client_secret);
-  expect(stored).not.toContain('access_token');
+  const client = await deploymentClient.get();
+  const registrations = await f.db`SELECT clientId, userId FROM auth_oauthClient`;
+  expect(Array.from(registrations)).toEqual([{ clientId: client.clientId, userId: null }]);
+  const stored = await clientRepository.readClient();
+  expect(stored).not.toContain(client.clientSecret);
+  expect(JSON.stringify(await db`SELECT * FROM utilint_secrets`)).not.toContain('access_token');
+  expect(await (await context.request.get(`${u}/api/developer/apps`)).json()).toEqual([]);
   expect(await page.content()).not.toContain(f.access);
   expect((await page.evaluate(async () => (await fetch('/api/utilint')).json())).connected).toBe(
     true,
@@ -250,7 +247,7 @@ try {
     maxRedirects: 0,
   });
   expect(signedOutResponse.headers().location).toBe(`${c}/utilint/complete?status=failed`);
-  await page.goto(`${u}/connect/${client.client_id}`);
+  await page.goto(`${u}/connect/${client.clientId}`);
   await expect(page.getByRole('button', { name: 'Sign in with passkey' })).toBeVisible();
   await page.getByRole('button', { name: 'Sign in with passkey' }).click();
   await expect(page.getByRole('heading', { name: 'Continue to Content Use' })).toBeVisible();
@@ -271,21 +268,25 @@ try {
   await expect(developer.getByRole('heading', { name: 'utilint connected' })).toBeVisible();
   expect((await (await context.request.get(`${c}/api/utilint`)).json()).connected).toBe(true);
   expect((await (await context.request.get(`${u}/api/dashboard`)).json()).connections).toEqual([
-    { clientId: client.client_id, name: 'Content Use' },
+    { clientId: client.clientId, name: 'Content Use' },
   ]);
   await developer.screenshot({
     path: resolve('outputs/consent-real-link-complete.png'),
     fullPage: true,
   });
-  await developer.goto(`${u}/connect/${client.client_id}/test`);
+  await developer.goto(`${u}/connect/${client.clientId}/test`);
   await expect(
     developer.getByRole('heading', { name: 'Content Use is already authorized' }),
   ).toBeVisible();
   await developer.getByRole('button', { name: 'Continue to Content Use' }).click();
   await expect(developer.getByRole('heading', { name: 'utilint connected' })).toBeVisible();
+  expect(Array.from(await f.db`SELECT clientId FROM auth_oauthClient`)).toEqual([
+    { clientId: client.clientId },
+  ]);
+  expect(await (await context.request.get(`${u}/api/developer/apps`)).json()).toEqual([]);
   expect(errors).toEqual([]);
   console.log(
-    'PASS two-app browser flow: dashboard summary → Utilint signup → ChatGPT → consent → server exchange → gateway summary → returning-user skip → mobile → signed-out real link → developer self-authorization',
+    'PASS two-app browser flow: deployment-owned dynamic registration → no developer setup → dashboard summary → Utilint signup → ChatGPT → consent → server exchange → gateway summary → returning-user skip → mobile → signed-out real link → second Utilint user authorization with the same app client',
   );
 } catch (error) {
   for (const page of context.pages())

@@ -58,6 +58,7 @@ function Authorize() {
               </li>
             ))}
           </ol>
+          <p className="consent-note">{data.appHost}</p>
           {!data.signedIn ? (
             <>
               <h1>{signup ? 'Create your utilint account' : `Continue to ${data.name}`}</h1>

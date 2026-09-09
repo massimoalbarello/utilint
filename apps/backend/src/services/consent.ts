@@ -25,6 +25,7 @@ export function createConsentService(auth: Auth, providers: ProviderService) {
       );
       return {
         name: client.client_name ?? 'App',
+        appHost: new URL(query.get('redirect_uri') ?? '').host,
         clientId,
         scopes,
         signedIn: Boolean(session),

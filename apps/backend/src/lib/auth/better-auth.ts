@@ -35,8 +35,8 @@ export function createAuth({
     clientRegistrationRequirePKCE: true,
     grantTypes: ['authorization_code', 'refresh_token'],
     disableJwtPlugin: true,
-    allowDynamicClientRegistration: false,
-    allowUnauthenticatedClientRegistration: false,
+    allowDynamicClientRegistration: true,
+    allowUnauthenticatedClientRegistration: true,
     clientRegistrationDefaultScopes: ['profile', 'ai:invoke', 'offline_access'],
     resourcePrivileges: () => false,
     accessTokenExpiresIn: 900,
@@ -58,9 +58,39 @@ export function createAuth({
       '/oauth2/create-client',
       '/oauth2/update-client',
     ],
-    rateLimit: { enabled: true, window: 60, max: 100 },
+    rateLimit: {
+      enabled: true,
+      window: 60,
+      max: 100,
+      customRules: { '/oauth2/register': { window: 60, max: 5 } },
+    },
     hooks: {
       before: createAuthMiddleware(async (ctx) => {
+        if (ctx.path === '/oauth2/register') {
+          // Keep dynamic registration within the same backend-app contract as the dashboard.
+          const metadata = z
+            .object({
+              client_name: z.string().trim().min(1).max(80).optional(),
+              redirect_uris: z
+                .array(
+                  z
+                    .string()
+                    .url()
+                    .max(2000)
+                    .refine((uri) => !new URL(uri).searchParams.has('utilint_connect')),
+                )
+                .min(1)
+                .max(10),
+              token_endpoint_auth_method: z.literal('client_secret_basic').optional(),
+            })
+            .safeParse(ctx.body);
+          if (!metadata.success)
+            throw new APIError('BAD_REQUEST', {
+              error: 'invalid_client_metadata',
+              error_description:
+                'Use up to 10 callback URLs, a name up to 80 characters, and client_secret_basic. The utilint_connect parameter is reserved.',
+            });
+        }
         if (ctx.path !== '/oauth2/consent' || ctx.body?.accept !== true) return;
         const session = await getAuthoritativeSessionFromCtx(ctx);
         if (!session || !(await hasProvider(session.user.id))) {
