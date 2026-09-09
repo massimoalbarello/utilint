@@ -1,24 +1,11 @@
 import type { ReactNode } from 'react';
 import { Card, CardContent } from './ui/card';
-export function Panel({
-  title,
-  action,
-  children,
-  className = '',
-}: {
-  title?: string;
-  action?: ReactNode;
-  children: ReactNode;
-  className?: string;
-}) {
+export function Panel({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <Card className={['panel', className].join(' ')}>
-      {(title || action) && (
-        <div className="panel-heading">
-          <h2>{title}</h2>
-          {action}
-        </div>
-      )}
+    <Card>
+      <div className="panel-heading">
+        <h2>{title}</h2>
+      </div>
       <CardContent>{children}</CardContent>
     </Card>
   );

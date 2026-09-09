@@ -1,11 +1,11 @@
+import { mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { SQL } from 'bun';
-import { ensureDir } from '#lib/filesystem.ts';
 
 const DATABASE_FILE_NAME = 'app.db';
 
 export async function createSqliteDatabase({ dataFolder }: { dataFolder: string }): Promise<SQL> {
-  ensureDir(dataFolder);
+  await mkdir(dataFolder, { recursive: true });
   const database = new SQL({
     adapter: 'sqlite',
     filename: join(dataFolder, DATABASE_FILE_NAME),

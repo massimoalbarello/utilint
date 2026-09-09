@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { AppError, textModel } from './gateway.ts';
+import type { RelayInput } from './provider.ts';
 
 const jsonRecord = z.record(z.string(), z.unknown());
 const functionCall = z.object({
@@ -17,7 +18,6 @@ const message = z
         z.null(),
       ])
       .optional(),
-    name: z.string().optional(),
     tool_call_id: z.string().optional(),
     tool_calls: z.array(functionCall).optional(),
   })
@@ -25,15 +25,12 @@ const message = z
 const shared = {
   model: z.string().min(1).max(100).refine(textModel, 'Use a supported text model.'),
   stream: z.boolean().optional(),
-  temperature: z.number().min(0).max(2).optional(),
-  top_p: z.number().min(0).max(1).optional(),
 };
 const chatSchema = z
   .object({
     ...shared,
     messages: z.array(message).min(1).max(128),
     max_completion_tokens: z.number().int().min(1).optional(),
-    max_tokens: z.number().int().min(1).optional(),
     n: z.literal(1).optional(),
     tools: z
       .array(
@@ -58,13 +55,6 @@ const chatSchema = z
     parallel_tool_calls: z.boolean().optional(),
     response_format: jsonRecord.optional(),
     reasoning_effort: z.enum(['none', 'minimal', 'low', 'medium', 'high', 'xhigh']).optional(),
-    stop: z
-      .union([z.string(), z.array(z.string()).max(4)])
-      .nullable()
-      .optional(),
-    seed: z.number().int().optional(),
-    frequency_penalty: z.number().min(-2).max(2).optional(),
-    presence_penalty: z.number().min(-2).max(2).optional(),
     stream_options: z.object({ include_usage: z.boolean() }).optional(),
     store: z.literal(false).optional(),
   })
@@ -135,7 +125,10 @@ const responsesSchema = z
     background: z.literal(false).optional(),
   })
   .strict();
-export function prepareRequest(endpoint: string, body: unknown): Record<string, unknown> {
+export function prepareRequest(
+  endpoint: RelayInput['endpoint'],
+  body: unknown,
+): Record<string, unknown> {
   const parsed = (endpoint === 'responses' ? responsesSchema : chatSchema).safeParse(body);
   if (!parsed.success)
     throw new AppError(
@@ -143,9 +136,5 @@ export function prepareRequest(endpoint: string, body: unknown): Record<string, 
       'invalid_request',
       'Invalid request. Check the supported fields and their values.',
     );
-  const data: Record<string, unknown> = parsed.data;
-  if (data.max_tokens !== undefined) data.max_completion_tokens = data.max_tokens;
-  delete data.max_tokens;
-  data.store = false;
-  return data;
+  return parsed.data;
 }

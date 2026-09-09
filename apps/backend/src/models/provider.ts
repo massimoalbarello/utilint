@@ -14,9 +14,8 @@ export type RelayInput = {
   body: Record<string, unknown>;
   signal: AbortSignal;
 };
-export type ProviderModel = { id: string; object: string; created: number; owned_by: string };
+type ProviderModel = { id: string; object: string; created: number; owned_by: string };
 export type ProviderConnection = {
   models(): Promise<ProviderModel[]>;
-  validate(input: RelayInput['body']): void;
   relay(input: RelayInput): Promise<Response>;
 };

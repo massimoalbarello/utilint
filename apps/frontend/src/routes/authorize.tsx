@@ -1,7 +1,8 @@
 import { useMutation } from '@tanstack/react-query';
 import { createFileRoute, redirect } from '@tanstack/react-router';
 import { AuthLayout } from '../components/layout/public-layout';
-import { Button, Notice } from '../components/ui';
+import { Button } from '../components/ui/button';
+import { Notice } from '../components/ui/feedback';
 import { publicClientOptions, sessionOptions } from '../queries/dashboard';
 import { authorizeApp } from '../queries/mutations';
 export const Route = createFileRoute('/authorize')({

@@ -1,8 +1,5 @@
 import type { SQL } from 'bun';
 import { getMigrations } from '#lib/assets.ts';
-import { createLogger } from '#lib/logger.ts';
-
-const logger = createLogger('db/migrate');
 
 const MIGRATIONS_TABLE = '__migrations';
 const MIGRATION_FILE_EXTENSION = '.sql';
@@ -42,7 +39,7 @@ async function applyMigration({
     ]);
   });
 
-  logger.info(`applied: ${name}`);
+  console.info(`Applied migration: ${name}`);
 }
 
 // Migrations run once at startup, on the same client the app uses: SQLite is a
@@ -64,6 +61,4 @@ export async function runMigrations({
 
     await applyMigration({ db, name, file });
   }
-
-  logger.info('migrations applied');
 }

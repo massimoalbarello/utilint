@@ -1,8 +1,11 @@
-import { Button, Card, CopyValue, Field } from '../ui';
+import { Panel } from '../panel';
+import { Button } from '../ui/button';
+import { CopyValue } from '../ui/copy-value';
+import { Field } from '../ui/field';
 export type ClientSecret = { clientId: string; secret: string };
 export function ClientSecretCard({ value, onClose }: { value: ClientSecret; onClose: () => void }) {
   return (
-    <Card title="Save your client secret" className="secret-panel">
+    <Panel title="Save your client secret">
       <p>Shown once. Store it in your app’s backend.</p>
       <Field label="Client ID">
         <CopyValue value={value.clientId} />
@@ -15,6 +18,6 @@ export function ClientSecretCard({ value, onClose }: { value: ClientSecret; onCl
           I’ve saved it
         </Button>
       </div>
-    </Card>
+    </Panel>
   );
 }

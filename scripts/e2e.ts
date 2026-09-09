@@ -151,6 +151,19 @@ try {
   const generation = await generate(tokens.access_token);
   expect(generation.status()).toBe(200);
   expect((await generation.json()).choices[0].message.content).toBe('Hello from ChatGPT.');
+  const callsBeforeInvalidRequests = f.state.calls;
+  for (const unsupported of [{ max_tokens: 32 }, { temperature: 0.5 }]) {
+    const rejected = await server.post(`${origin}/v1/chat/completions`, {
+      headers: { authorization: `Bearer ${tokens.access_token}` },
+      data: {
+        model: 'gpt-5.6-sol',
+        messages: [{ role: 'user', content: 'Hello' }],
+        ...unsupported,
+      },
+    });
+    expect(rejected.status()).toBe(400);
+  }
+  expect(f.state.calls).toBe(callsBeforeInvalidRequests);
   const responses = await generate(tokens.access_token, false, 'responses');
   expect((await responses.json()).output[0].content[0].text).toBe('Hello from ChatGPT.');
   const streamed = await generate(tokens.access_token, true);

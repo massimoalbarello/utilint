@@ -7,9 +7,6 @@ Scoped guidance begins in the [backend](./apps/backend/AGENTS.md),
 [frontend](./apps/frontend/AGENTS.md), and [scripts](./scripts/AGENTS.md) guides. Each guide links to
 the narrower guides it owns; follow only the branch relevant to the code being changed.
 
-The repository's compatibility policy is documented separately in
-[BETA-COMPATIBILITY.md](./BETA-COMPATIBILITY.md).
-
 ## What belongs in an AGENTS.md
 
 Use these files for durable engineering principles that require judgment. Do not record feature

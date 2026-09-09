@@ -1,6 +1,6 @@
 import type { QueryClient } from '@tanstack/react-query';
 import { createRootRouteWithContext, Link, Outlet } from '@tanstack/react-router';
-import { Notice } from '../components/ui';
+import { Notice } from '../components/ui/feedback';
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   component: () => <Outlet />,
   errorComponent: ({ error, reset }) => (

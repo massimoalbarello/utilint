@@ -2,7 +2,11 @@ import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-q
 import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
 import { ChatGPTLogin } from '../components/chatgpt-login';
-import { Button, Card, ConfirmAction, Empty, Notice, PageHeader } from '../components/ui';
+import { PageHeader } from '../components/layout/page-header';
+import { Panel } from '../components/panel';
+import { Button } from '../components/ui/button';
+import { ConfirmAction } from '../components/ui/confirm-action';
+import { Empty, Notice } from '../components/ui/feedback';
 import { dashboardOptions } from '../queries/dashboard';
 import { disconnectProvider, revokeApp } from '../queries/mutations';
 import { beginChatGPTLogin } from '../queries/providers';
@@ -32,7 +36,7 @@ function Dashboard() {
   return (
     <>
       <PageHeader title="Account" />
-      <Card title="ChatGPT">
+      <Panel title="ChatGPT">
         {loginId ? (
           <ChatGPTLogin loginId={loginId} onClose={() => setLoginId(null)} />
         ) : data.provider ? (
@@ -60,8 +64,8 @@ function Dashboard() {
           </div>
         )}
         {begin.error && <Notice error>{begin.error.message}</Notice>}
-      </Card>
-      <Card title="Connected apps">
+      </Panel>
+      <Panel title="Connected apps">
         {data.connections.length ? (
           data.connections.map((app) => (
             <div className="connection-row" key={app.clientId}>
@@ -81,7 +85,7 @@ function Dashboard() {
             description="Apps appear here after you authorize them."
           />
         )}
-      </Card>
+      </Panel>
     </>
   );
 }

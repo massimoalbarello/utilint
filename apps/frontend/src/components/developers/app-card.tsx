@@ -1,8 +1,10 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { type DeveloperApp, developerOptions } from '../../queries/dashboard';
 import { deleteApp, rotateAppSecret } from '../../queries/mutations';
-import { Card, CopyValue, Field } from '../ui';
+import { Panel } from '../panel';
 import { ConfirmAction } from '../ui/confirm-action';
+import { CopyValue } from '../ui/copy-value';
+import { Field } from '../ui/field';
 import type { ClientSecret } from './client-secret';
 export function DeveloperAppCard({
   app,
@@ -22,7 +24,7 @@ export function DeveloperAppCard({
     onSuccess: () => qc.invalidateQueries(developerOptions),
   });
   return (
-    <Card title={app.client_name ?? 'App'}>
+    <Panel title={app.client_name ?? 'App'}>
       <div className="developer-app">
         <Field label="Client ID">
           <CopyValue value={app.client_id} />
@@ -51,6 +53,6 @@ export function DeveloperAppCard({
           />
         </div>
       </div>
-    </Card>
+    </Panel>
   );
 }

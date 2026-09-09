@@ -36,8 +36,9 @@ Use authorization code with S256 PKCE and `client_secret_basic` from your app's 
 Send the user's **utilint access token** as Bearer authorization to `GET /v1/models`,
 `POST /v1/responses` or `POST /v1/chat/completions`. Select a model returned by `/v1/models`.
 Text, function tools and streaming are supported. Subscription requests use `store: false`;
-output-length parameters are prompt targets. Unsupported fields are rejected. The subscription
-transport follows the current Codex device flow and may change upstream.
+`max_completion_tokens` (Chat Completions) and `max_output_tokens` (Responses) are prompt
+targets. Unsupported fields are rejected. The subscription transport follows the current Codex
+device flow and may change upstream.
 
 Provider access/refresh tokens and account metadata are encrypted with AES-256-GCM, a random
 nonce and owner-bound associated data. HKDF derives a separate vault key from the required

@@ -31,7 +31,6 @@ export function createGatewayService(repository: ConnectionRepository, providers
     }) {
       const parsed = prepareRequest(endpoint, body);
       const provider = await connection(actor);
-      provider.validate(parsed);
       try {
         const response = await provider.relay({
           endpoint,

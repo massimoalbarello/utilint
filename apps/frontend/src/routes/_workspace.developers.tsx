@@ -5,7 +5,11 @@ import { useState } from 'react';
 import { DeveloperAppCard } from '../components/developers/app-card';
 import { AppForm } from '../components/developers/app-form';
 import { type ClientSecret, ClientSecretCard } from '../components/developers/client-secret';
-import { Button, Card, CopyValue, Empty, PageHeader } from '../components/ui';
+import { PageHeader } from '../components/layout/page-header';
+import { Panel } from '../components/panel';
+import { Button } from '../components/ui/button';
+import { CopyValue } from '../components/ui/copy-value';
+import { Empty } from '../components/ui/feedback';
 import { developerOptions } from '../queries/dashboard';
 import { registerApp } from '../queries/mutations';
 export const Route = createFileRoute('/_workspace/developers')({
@@ -40,19 +44,19 @@ function Developers() {
       />
       {secret && <ClientSecretCard value={secret} onClose={() => setSecret(null)} />}
       {creating && (
-        <Card title="Register an app">
+        <Panel title="Register an app">
           <AppForm
             onSubmit={(value) => create.mutate(value)}
             onCancel={() => setCreating(false)}
             pending={create.isPending}
             error={create.error}
           />
-        </Card>
+        </Panel>
       )}
       {data?.length
         ? data.map((app) => <DeveloperAppCard key={app.client_id} app={app} onSecret={setSecret} />)
         : !creating && (
-            <section className="panel">
+            <section>
               <Empty
                 title="No registered apps"
                 description="Register an app to get an OAuth client ID and secret."

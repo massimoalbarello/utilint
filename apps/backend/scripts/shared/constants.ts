@@ -29,7 +29,7 @@ export const FRONTEND_DIST_DST = join(BACKEND_DIR, PUBLIC_FRONTEND_DIR_NAME);
  * Cross-compiling downloads a *released* Bun for the target platform, so the
  * version in `.bun-version` has to be one npm actually serves.
  */
-export const DEFAULT_BUILD_TARGET = 'bun-linux-x64';
+const DEFAULT_BUILD_TARGET = 'bun-linux-x64';
 
 const buildTarget = process.env.BUILD_TARGET || DEFAULT_BUILD_TARGET;
 

@@ -1,7 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { cancelChatGPTLogin, chatGPTLoginOptions } from '../queries/providers';
-import { Button, Notice } from './ui';
+import { Button, buttonVariants } from './ui/button';
+import { Notice } from './ui/feedback';
 export function ChatGPTLogin({ loginId, onClose }: { loginId: string; onClose: () => void }) {
   const qc = useQueryClient();
   const query = useQuery(chatGPTLoginOptions(loginId, qc));
@@ -35,7 +36,7 @@ export function ChatGPTLogin({ loginId, onClose }: { loginId: string; onClose: (
       </output>
       <div className="actions">
         <a
-          className="button"
+          className={buttonVariants()}
           href={verificationUrl}
           target="_blank"
           rel="noreferrer"

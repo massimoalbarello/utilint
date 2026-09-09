@@ -2,7 +2,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { Fingerprint } from 'lucide-react';
 import { AuthLayout } from '../components/layout/public-layout';
-import { Button, Notice } from '../components/ui';
+import { Button } from '../components/ui/button';
+import { Notice } from '../components/ui/feedback';
 import { authClient } from '../lib/auth';
 export const Route = createFileRoute('/login')({
   validateSearch: (

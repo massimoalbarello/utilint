@@ -23,7 +23,6 @@ export const publicClientOptions = (clientId: string) =>
     queryKey: ['oauth-client', clientId],
     queryFn: () => unwrap(api.api.authorization({ clientId }).get()),
   });
-export type Dashboard = NonNullable<Awaited<ReturnType<typeof api.api.dashboard.get>>['data']>;
 export type DeveloperApp = NonNullable<
   Awaited<ReturnType<typeof api.api.developer.apps.get>>['data']
 >[number];

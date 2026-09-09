@@ -1,5 +1,7 @@
 import { useForm } from '@tanstack/react-form';
-import { Button, Field, Notice } from '../ui';
+import { Button } from '../ui/button';
+import { Notice } from '../ui/feedback';
+import { Field } from '../ui/field';
 import { Input } from '../ui/input';
 import { Textarea } from '../ui/textarea';
 export function AppForm({

@@ -31,10 +31,6 @@ body {
   font-size: 14px;
   line-height: 1.5;
 }
-a {
-  color: inherit;
-  text-decoration: none;
-}
 p {
   color: #737373;
   margin: 0;
@@ -151,26 +147,6 @@ summary {
 .form-actions {
   justify-content: flex-end;
 }
-.button {
-  display: inline-flex;
-  width: fit-content;
-  min-height: 32px;
-  align-items: center;
-  justify-content: center;
-  padding: 6px 12px;
-  gap: 8px;
-  border: 1px solid #171717;
-  border-radius: 8px;
-  background: #171717;
-  color: white;
-  font-size: 13px;
-  font-weight: 500;
-}
-.button.secondary {
-  background: white;
-  color: #171717;
-  border-color: #e5e5e5;
-}
 .field {
   display: flex;
   flex-direction: column;
@@ -179,9 +155,6 @@ summary {
 }
 .field small {
   font-weight: 400;
-}
-.field-label {
-  font-weight: 500;
 }
 .notice {
   border: 1px solid #e5e5e5;
@@ -215,37 +188,6 @@ summary {
   border-radius: 6px;
   overflow-wrap: anywhere;
   font-size: 12px;
-}
-.code-block,
-pre {
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  font-size: 12px;
-  padding: 12px;
-  background: #f5f5f5;
-  border-radius: 6px;
-}
-.app-icon {
-  width: 32px;
-  height: 32px;
-  border: 1px solid #e5e5e5;
-  border-radius: 8px;
-  display: grid;
-  place-items: center;
-  font-size: 13px;
-}
-.app-heading {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.app-card .panel-body {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-.client-secret {
-  margin-bottom: 0;
 }
 .device-code {
   display: block;

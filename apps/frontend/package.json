@@ -5,8 +5,7 @@
   "scripts": {
     "dev": "bun --bun vite",
     "build": "bun --bun vite build",
-    "check:types": "tsc -b",
-    "test": "bun test --pass-with-no-tests"
+    "check:types": "tsc -b"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",

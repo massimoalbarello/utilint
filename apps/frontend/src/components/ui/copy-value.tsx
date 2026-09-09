@@ -1,13 +1,13 @@
 import { Check, Copy } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from './button';
-export function CopyButton({ value, label = 'Copy' }: { value: string; label?: string }) {
+
+function CopyButton({ value }: { value: string }) {
   const [status, setStatus] = useState<'idle' | 'copied' | 'failed'>('idle');
   return (
     <Button
       variant="ghost"
-      className="copy-button"
-      aria-label={label}
+      aria-label="Copy"
       onClick={() => {
         if (!navigator.clipboard) {
           setStatus('failed');
@@ -20,25 +20,15 @@ export function CopyButton({ value, label = 'Copy' }: { value: string; label?: s
       }}
     >
       {status === 'copied' ? <Check size={14} /> : <Copy size={14} />}
-      <span>{status === 'copied' ? 'Copied' : status === 'failed' ? 'Copy manually' : label}</span>
+      <span>{status === 'copied' ? 'Copied' : status === 'failed' ? 'Copy manually' : 'Copy'}</span>
     </Button>
   );
 }
-export function CopyValue({ value, label }: { value: string; label?: string }) {
+export function CopyValue({ value }: { value: string }) {
   return (
     <div className="copy-value">
       <code>{value}</code>
-      <CopyButton value={value} label={label} />
-    </div>
-  );
-}
-export function Code({ children }: { children: string }) {
-  return (
-    <div className="code-wrap">
-      <CopyButton value={children} />
-      <pre>
-        <code>{children}</code>
-      </pre>
+      <CopyButton value={value} />
     </div>
   );
 }

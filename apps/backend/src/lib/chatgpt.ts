@@ -12,24 +12,6 @@ import { boundedJson } from './chatgpt-auth.ts';
 
 const baseURL = 'https://chatgpt.com/backend-api/codex';
 const catalogURL = `${baseURL}/models?client_version=0.153.4`;
-const unsupported = [
-  'temperature',
-  'top_p',
-  'stop',
-  'seed',
-  'frequency_penalty',
-  'presence_penalty',
-];
-
-function validate(body: Record<string, unknown>) {
-  const rejected = unsupported.filter((key) => body[key] !== undefined);
-  if (rejected.length)
-    throw new AppError(
-      400,
-      'unsupported_subscription_parameter',
-      `ChatGPT subscription requests do not support: ${rejected.join(', ')}.`,
-    );
-}
 type Message = {
   role: string;
   content?: string | { text: string }[] | null;
@@ -40,7 +22,6 @@ const contentText = (content: Message['content']) =>
   typeof content === 'string' ? content : (content?.map((part) => part.text).join('\n') ?? '');
 
 function subscriptionBody({ endpoint, body }: RelayInput): ResponseCreateParamsStreaming {
-  validate(body);
   const result: Record<string, unknown> = {
     model: body.model,
     store: false,
@@ -189,7 +170,6 @@ export function createChatGPTProvider(fetcher: typeof fetch = fetch) {
       fetch: (input, init) => fetcher(input, { ...init, redirect: 'error' }),
     });
     return {
-      validate,
       async models() {
         const response = await fetcher(catalogURL, {
           headers,
