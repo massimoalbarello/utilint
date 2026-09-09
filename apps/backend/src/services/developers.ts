@@ -1,0 +1,44 @@
+import type { Auth } from '#lib/auth/better-auth.ts';
+export function createDeveloperService(auth: Auth) {
+  return {
+    list(headers: Headers) {
+      return auth.api.getOAuthClients({ headers });
+    },
+    register({
+      headers,
+      name,
+      redirectUris,
+    }: {
+      headers: Headers;
+      name: string;
+      redirectUris: string[];
+    }) {
+      return auth.api.createOAuthClient({
+        headers,
+        body: {
+          client_name: name,
+          redirect_uris: redirectUris,
+          application_type: redirectUris.some((uri) =>
+            ['localhost', '127.0.0.1', '[::1]'].includes(new URL(uri).hostname),
+          )
+            ? 'native'
+            : 'web',
+          token_endpoint_auth_method: 'client_secret_basic',
+          grant_types: ['authorization_code', 'refresh_token'],
+          response_types: ['code'],
+          scope: 'profile ai:invoke offline_access',
+        },
+      });
+    },
+    rotate({ headers, clientId }: { headers: Headers; clientId: string }) {
+      return auth.api.rotateClientSecret({ headers, body: { client_id: clientId } });
+    },
+    remove({ headers, clientId }: { headers: Headers; clientId: string }) {
+      return auth.api.deleteOAuthClient({ headers, body: { client_id: clientId } });
+    },
+    publicClient({ headers, clientId }: { headers: Headers; clientId: string }) {
+      return auth.api.getOAuthClientPublic({ headers, query: { client_id: clientId } });
+    },
+  };
+}
+export type DeveloperService = ReturnType<typeof createDeveloperService>;

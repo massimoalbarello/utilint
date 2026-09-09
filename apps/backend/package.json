@@ -1,0 +1,31 @@
+{
+  "name": "@repo/backend",
+  "type": "module",
+  "private": true,
+  "imports": {
+    "#*": "./src/*"
+  },
+  "exports": {
+    "./types": "./src/types.ts",
+    "./gateway": "./src/models/gateway.ts"
+  },
+  "scripts": {
+    "dev": "bun scripts/dev.ts",
+    "build": "bun scripts/build.ts",
+    "check:types": "tsc -b",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@better-auth/oauth-provider": "catalog:",
+    "@better-auth/passkey": "catalog:",
+    "@ilbertt/better-auth-bun-sql": "0.4.0",
+    "better-auth": "catalog:",
+    "elysia": "1.4.30",
+    "openai": "7.8.0",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "workspace:*",
+    "typescript": "catalog:"
+  }
+}
