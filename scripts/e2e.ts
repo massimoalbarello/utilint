@@ -58,6 +58,9 @@ try {
   await page.getByRole('button', { name: 'Register an app' }).click();
   await page.getByLabel('Application name', { exact: true }).fill('Notes');
   await page.getByLabel('Redirect URLs', { exact: true }).fill(redirectUri);
+  await page
+    .getByLabel('Connection start URL', { exact: true })
+    .fill('http://localhost:4351/start');
   const creation = page.waitForResponse(
     (r) => r.url() === `${origin}/api/developer/apps` && r.request().method() === 'POST',
   );
@@ -149,6 +152,38 @@ try {
     expect(response.status()).toBe(200);
     return response.json();
   }
+  for (const suffix of ['', '/test']) {
+    const link = await server.get(`${origin}/connect/${client.client_id}${suffix}`, {
+      maxRedirects: 0,
+    });
+    expect(link.status()).toBe(302);
+    expect(link.headers().location).toBe(
+      suffix ? `/connect/${client.client_id}` : 'http://localhost:4351/start',
+    );
+  }
+  expect(
+    (
+      await server.get(`${origin}/connect/${client.client_id}?state=${'x'.repeat(32)}`, {
+        maxRedirects: 0,
+      })
+    ).status(),
+  ).toBe(400);
+  expect((await server.get(`${origin}/connect/unknown`, { maxRedirects: 0 })).status()).toBe(404);
+  const invalidStart = await context.request.put(
+    `${origin}/api/developer/apps/${client.client_id}/start`,
+    {
+      headers: { origin },
+      data: { startUrl: 'https://attacker.example/start' },
+    },
+  );
+  expect(invalidStart.status()).toBe(400);
+  await page.getByRole('button', { name: 'Sign out' }).click();
+  await page.goto(
+    `${origin}/login?redirect=${encodeURIComponent(`/connect/${client.client_id}/test`)}`,
+  );
+  await page.getByRole('button', { name: 'Sign in with a passkey' }).click();
+  await expect(page).toHaveURL('http://localhost:4351/start');
+  await page.goto(`${origin}/dashboard`);
   await page.getByRole('button', { name: 'Sign out' }).click();
   const tokens = await authorize(true);
   const generate = (token: string, streaming = false, endpoint = 'chat/completions') =>
@@ -252,9 +287,17 @@ try {
   ).toBe(false);
   expect(
     (
-      await other.request.get(`${origin}/connect/${client.client_id}/test`, { maxRedirects: 0 })
+      await other.request.put(`${origin}/api/developer/apps/${client.client_id}/start`, {
+        headers: { origin },
+        data: { startUrl: 'http://localhost:4351/attacker' },
+      })
     ).status(),
   ).toBe(404);
+  expect(
+    (
+      await other.request.get(`${origin}/connect/${client.client_id}`, { maxRedirects: 0 })
+    ).headers().location,
+  ).toBe('http://localhost:4351/start');
   await other.close();
   await page.getByRole('button', { name: 'Disconnect', exact: true }).click();
   await page.getByRole('button', { name: 'Disconnect', exact: true }).click();
@@ -293,28 +336,11 @@ try {
       })
     ).ok(),
   ).toBe(false);
-  // Test links exercise the signed consent screen but cannot create a grant, even via a direct POST.
   await page.goto(`${origin}/developers`);
   await expect(
-    page.getByText(`${origin}/connect/${client.client_id}/test`, { exact: true }),
+    page.getByText(`${origin}/connect/${client.client_id}`, { exact: true }),
   ).toBeVisible();
-  await page.goto(`${origin}/connect/${client.client_id}/test`);
-  await expect(page.getByText('Test mode · utilint', { exact: true })).toBeVisible();
-  const testQuery = new URL(page.url()).search.slice(1);
-  expect(
-    (
-      await context.request.post(`${origin}/api/auth/oauth2/consent`, {
-        headers: { origin },
-        data: { accept: true, oauth_query: testQuery },
-      })
-    ).status(),
-  ).toBe(403);
-  await page.getByRole('button', { name: 'Allow connection' }).click();
-  await expect(page.getByRole('heading', { name: 'Test complete' })).toBeVisible();
-  expect((await (await context.request.get(`${origin}/api/dashboard`)).json()).connections).toEqual(
-    [],
-  );
-  await screenshot('consent-test-complete');
+  await expect(page.getByText('Consent test URL', { exact: true })).toHaveCount(0);
   const reauthorized = await authorize(false);
   expect((await generate(refreshed.access_token)).status()).toBe(401);
   expect((await generate(reauthorized.access_token)).status()).toBe(200);
@@ -327,6 +353,9 @@ try {
     headers: { origin },
   });
   expect(deleted.status()).toBe(200);
+  expect(
+    (await server.get(`${origin}/connect/${client.client_id}`, { maxRedirects: 0 })).status(),
+  ).toBe(404);
   expect((await generate(reauthorized.access_token)).status()).toBe(401);
   expect(
     (await f.db`SELECT name FROM sqlite_master WHERE type='table' AND name LIKE 'gateway_%'`)

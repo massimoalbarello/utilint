@@ -10,7 +10,6 @@ import {
 } from 'better-auth/api';
 import type { SQL } from 'bun';
 import { z } from 'zod';
-import { isConsentTest } from '#models/consent.ts';
 
 export function createAuth({
   database,
@@ -63,12 +62,6 @@ export function createAuth({
     hooks: {
       before: createAuthMiddleware(async (ctx) => {
         if (ctx.path !== '/oauth2/consent' || ctx.body?.accept !== true) return;
-        if (isConsentTest(String(ctx.body?.oauth_query ?? ''))) {
-          throw APIError.from('FORBIDDEN', {
-            code: 'test_only',
-            message: 'Test links cannot grant app access. Connect from the app to authorize it.',
-          });
-        }
         const session = await getAuthoritativeSessionFromCtx(ctx);
         if (!session || !(await hasProvider(session.user.id))) {
           throw APIError.from('FORBIDDEN', {

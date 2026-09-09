@@ -20,20 +20,16 @@ export function connectRoutes({
   return new Elysia()
     .get(
       '/connect/:clientId/test',
-      async ({ request, params, redirect }) => {
-        if (!(await auth.api.getSession({ headers: request.headers }))) {
-          const target = `/connect/${encodeURIComponent(params.clientId)}/test`;
-          return redirect(`/login?redirect=${encodeURIComponent(target)}`);
-        }
-        return redirect(
-          await developers.testUrl({ headers: request.headers, clientId: params.clientId, origin }),
-        );
-      },
+      ({ params, redirect }) => redirect(`/connect/${encodeURIComponent(params.clientId)}`, 302),
       { params: t.Object({ clientId: t.String({ minLength: 1, maxLength: 200 }) }) },
     )
     .get(
       '/connect/:clientId',
-      ({ params, query, redirect }) => {
+      async ({ params, query, redirect }) => {
+        if (!query.redirect_uri && !query.state && !query.code_challenge)
+          return redirect(await developers.startUrl(params.clientId), 302);
+        if (!query.redirect_uri || !query.state || !query.code_challenge)
+          throw new AppError(400, 'invalid_request', 'Restart the connection from the app.');
         const target = new URL('/api/auth/oauth2/authorize', origin);
         target.search = new URLSearchParams({
           client_id: params.clientId,
@@ -52,9 +48,13 @@ export function connectRoutes({
         params: t.Object({ clientId: t.String({ minLength: 1, maxLength: 200 }) }),
         query: t.Object(
           {
-            redirect_uri: t.String({ format: 'uri', maxLength: 2000 }),
-            state: t.String({ minLength: 32, maxLength: 256, pattern: '^[A-Za-z0-9_-]+$' }),
-            code_challenge: t.String({ minLength: 43, maxLength: 43, pattern: '^[A-Za-z0-9_-]+$' }),
+            redirect_uri: t.Optional(t.String({ format: 'uri', maxLength: 2000 })),
+            state: t.Optional(
+              t.String({ minLength: 32, maxLength: 256, pattern: '^[A-Za-z0-9_-]+$' }),
+            ),
+            code_challenge: t.Optional(
+              t.String({ minLength: 43, maxLength: 43, pattern: '^[A-Za-z0-9_-]+$' }),
+            ),
           },
           { additionalProperties: false },
         ),

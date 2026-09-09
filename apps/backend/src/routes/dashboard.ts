@@ -57,23 +57,40 @@ export function dashboardRoutes({
       ({ ownerId, params }) => dashboard.revoke({ ownerId, clientId: params.clientId }),
       { params: clientParams },
     )
-    .get('/developer/apps', ({ request }) => developers.list(request.headers))
+    .get('/developer/apps', ({ request, ownerId }) => developers.list(request.headers, ownerId))
     .post(
       '/developer/apps',
-      ({ request, body }) =>
+      ({ request, ownerId, body }) =>
         developers.register({
           headers: request.headers,
+          ownerId,
+          startUrl: body.startUrl,
           name: body.name,
           redirectUris: body.redirectUris,
         }),
       {
         body: t.Object({
           name: t.String({ minLength: 1, maxLength: 80 }),
+          startUrl: t.Optional(t.String({ format: 'uri', maxLength: 2000 })),
           redirectUris: t.Array(t.String({ format: 'uri', maxLength: 2000 }), {
             minItems: 1,
             maxItems: 10,
           }),
         }),
+      },
+    )
+    .put(
+      '/developer/apps/:clientId/start',
+      ({ request, ownerId, params, body }) =>
+        developers.updateStart({
+          headers: request.headers,
+          ownerId,
+          clientId: params.clientId,
+          startUrl: body.startUrl,
+        }),
+      {
+        params: clientParams,
+        body: t.Object({ startUrl: t.String({ format: 'uri', maxLength: 2000 }) }),
       },
     )
     .post(

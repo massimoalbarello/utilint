@@ -6,6 +6,7 @@ import { ConfirmAction } from '../ui/confirm-action';
 import { CopyValue } from '../ui/copy-value';
 import { Field } from '../ui/field';
 import type { ClientSecret } from './client-secret';
+import { ConnectionSetup } from './connection-setup';
 export function DeveloperAppCard({
   app,
   onSecret,
@@ -30,20 +31,17 @@ export function DeveloperAppCard({
           <CopyValue value={app.client_id} />
         </Field>
         <Field
-          label="Connection URL"
-          hint="Open in a popup or redirect. Add a fresh state, code_challenge, and registered redirect_uri for each connection."
+          label="Consent URL"
+          hint="Use this link in your app, or open it here to connect your own account."
         >
           <CopyValue value={`${window.location.origin}/connect/${app.client_id}`} />
+          {app.startUrl && (
+            <a href={`/connect/${app.client_id}`} target="_blank" rel="noreferrer">
+              Open consent flow ↗
+            </a>
+          )}
         </Field>
-        <Field
-          label="Consent test URL"
-          hint="Opens the flow in test mode. No app access is granted."
-        >
-          <CopyValue value={`${window.location.origin}/connect/${app.client_id}/test`} />
-          <a href={`/connect/${app.client_id}/test`} target="_blank" rel="noreferrer">
-            Test consent flow ↗
-          </a>
-        </Field>
+        <ConnectionSetup app={app} />
         <Field label="Redirect URLs">
           <div className="redirect-list">
             {app.redirect_uris.map((uri) => (

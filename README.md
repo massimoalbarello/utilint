@@ -23,7 +23,7 @@ Create a passkey account. In **Account**, connect ChatGPT using OpenAI's device 
 the Codex allowance included in an eligible ChatGPT plan. No CLI installation is needed. You can
 disconnect/reconnect ChatGPT and revoke individual apps. Requests already sent may finish.
 
-In **Developers**, register your app's callback URLs and save its one-time client secret.
+In **Developers**, register your app's callback and connection start URLs and save its one-time client secret.
 Copy the connection URL to start the hosted passkey → ChatGPT → consent flow from your app.
 See [Connect with utilint](docs/connect.md) for the popup integration and callback contract.
 Use authorization code with S256 PKCE and `client_secret_basic` from your app's backend:

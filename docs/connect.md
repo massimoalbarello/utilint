@@ -1,14 +1,26 @@
 # Connect with utilint
 
-Register an app in **Developers**, including its exact callback URL. Save the client secret on
-its backend. The dashboard gives you a stable connection URL:
+Register an app in **Developers** with its exact callback URL and **Connection start URL**.
+The start URL is your backend endpoint that begins OAuth for the current app user, for example
+`https://your-app.com/auth/utilint/start`. It must use HTTPS (or HTTP localhost), share an origin
+with a registered callback, and have no query or fragment. Keep the client secret on your backend.
+
+The dashboard gives you one **Consent URL**. Embed this exact link in your app as a button or
+open it from the dashboard to authorize your own account:
 
 ```
 https://YOUR_UTILINT/connect/CLIENT_ID
 ```
 
-For every connection attempt, your backend creates a random `state` and S256 PKCE verifier,
-stores both against the signed-in user's session for at most 10 minutes, and appends these fields:
+Opening it redirects to your registered start endpoint. That endpoint checks your app session
+(and returns there after app login if needed), creates a fresh OAuth attempt, then redirects back
+to Utilint. This follows the app-initiated request pattern described in
+[third-party initiated login](https://openid.net/specs/openid-connect-core-1_0.html#ThirdPartyInitiatedLogin).
+There is no preview mode: accepting consent creates real app access and returns to your callback
+for token exchange. Existing `/connect/CLIENT_ID/test` links redirect to the same real flow.
+
+Your start endpoint creates a random `state` and S256 PKCE verifier, stores both against the
+signed-in user's session for at most 10 minutes, and redirects to the consent URL with:
 
 | Query field | Value |
 | --- | --- |
@@ -16,16 +28,22 @@ stores both against the signed-in user's session for at most 10 minutes, and app
 | `state` | Fresh random value, 32–256 URL-safe characters |
 | `code_challenge` | Base64url SHA-256 of the verifier, without padding |
 
-Open the resulting URL in a popup from the user's click; use a normal redirect if popups are
-blocked. The URL selects authorization-code flow with `profile ai:invoke offline_access`,
-the `/v1` resource, and S256. Do not reuse a fixed state/verifier or put the client secret in it.
-The bare link needs these per-attempt fields before it can start a connection.
+The URL selects authorization-code flow with `profile ai:invoke offline_access`, the `/v1`
+resource, and S256. The bare link always uses the registered start URL; supplying a partial set
+of OAuth parameters fails. Never reuse a fixed state/verifier or put the client secret in a URL.
+Apps already creating their own attempts can continue opening the parameterized URL directly.
+Open either URL in a popup from a user click, with a normal redirect if popups are blocked.
 
-The dashboard also shows a directly usable **Consent test URL**, `/connect/CLIENT_ID/test`.
-Open it while signed in as the app's developer. It creates a fresh signed request and shows the
-real progressive flow in test mode, then finishes inside Utilint. It never grants app access,
-issues tokens, or calls your app callback. Use the app integration to test the complete token
-exchange. The `utilint-test_` state prefix is reserved for these requests.
+For Content Use, register these endpoints (using your deployment's origin):
+
+```
+Connection start URL: https://YOUR_CONTENT_USE/api/utilint/start
+Redirect URL:         https://YOUR_CONTENT_USE/api/utilint/callback
+```
+
+Existing registered apps can add their start URL under **Connection setup** without changing
+client IDs, secrets, grants, or tokens. Only the app's developer can change this setting. The
+public link only redirects to the registered address and never exposes credentials.
 
 The hosted flow checks the session, offers passkey sign-in or signup, connects ChatGPT if needed,
 and asks for consent. Existing connections skip completed steps. An existing app grant shows

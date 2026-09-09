@@ -15,7 +15,6 @@ function Authorize() {
   const qc = useQueryClient();
   const options = consentOptions(window.location.search.slice(1));
   const context = useQuery(options);
-  const [testComplete, setTestComplete] = useState(false);
   const [signup, setSignup] = useState(false);
   const [loginId, setLoginId] = useState<string | null>(null);
   const login = useMutation({
@@ -31,10 +30,6 @@ function Authorize() {
   });
   const consent = useMutation({
     mutationFn: async (accept: boolean) => {
-      if (context.data?.test) {
-        setTestComplete(true);
-        return null;
-      }
       return authorizeApp({ accept, scope: context.data?.scopes.join(' ') ?? '' });
     },
     onSuccess: (url) => {
@@ -45,16 +40,8 @@ function Authorize() {
   const step = !data?.signedIn ? 0 : !data.provider ? 1 : 2;
   return (
     <AuthLayout>
-      <p className="consent-eyebrow">
-        {data?.test ? 'Test mode · utilint' : 'Connect with utilint'}
-      </p>
-      {testComplete ? (
-        <>
-          <h1>Test complete</h1>
-          <p>No app access was granted.</p>
-          <a href="/developers">Back to Developers</a>
-        </>
-      ) : context.error ? (
+      <p className="consent-eyebrow">Connect with utilint</p>
+      {context.error ? (
         <>
           <h1>Connection expired or invalid</h1>
           <Notice error>Close this window and start again from the app.</Notice>

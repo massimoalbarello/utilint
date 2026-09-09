@@ -8,6 +8,7 @@ import { createChatGPTAuth } from './lib/chatgpt-auth.ts';
 import { loadEnv } from './lib/env.ts';
 import { createVault } from './lib/vault.ts';
 import { createConnectionRepository } from './repositories/sqlite-connections.ts';
+import { createDeveloperRepository } from './repositories/sqlite-developers.ts';
 import { createDashboardService } from './services/dashboard.ts';
 import { createDeveloperService } from './services/developers.ts';
 import { createGatewayService } from './services/gateway.ts';
@@ -35,7 +36,7 @@ const app = createApp({
   auth,
   providers,
   dashboard: createDashboardService(repository, providers),
-  developers: createDeveloperService(auth),
+  developers: createDeveloperService(auth, createDeveloperRepository(database)),
   gateway: createGatewayService(repository, providers),
   assets: getPublicAssets(),
   origin: env.baseUrl.origin,

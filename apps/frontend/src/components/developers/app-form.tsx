@@ -10,16 +10,17 @@ export function AppForm({
   pending,
   error,
 }: {
-  onSubmit: (value: { name: string; redirectUris: string[] }) => void;
+  onSubmit: (value: { name: string; redirectUris: string[]; startUrl: string }) => void;
   onCancel: () => void;
   pending: boolean;
   error: Error | null;
 }) {
   const form = useForm({
-    defaultValues: { name: '', redirectUris: '' },
+    defaultValues: { name: '', redirectUris: '', startUrl: '' },
     onSubmit: ({ value }) =>
       onSubmit({
         name: value.name.trim(),
+        startUrl: value.startUrl.trim(),
         redirectUris: value.redirectUris
           .split('\n')
           .map((line) => line.trim())
@@ -60,6 +61,24 @@ export function AppForm({
               required
               rows={3}
               placeholder="https://your-app.com/auth/utilint/callback"
+              value={field.state.value}
+              onChange={(event) => field.handleChange(event.target.value)}
+            />
+          </Field>
+        )}
+      </form.Field>
+      <form.Field name="startUrl">
+        {(field) => (
+          <Field
+            label="Connection start URL"
+            htmlFor="start-url"
+            hint="Your backend endpoint that starts a connection for the current user. Use the same origin as a redirect URL."
+          >
+            <Input
+              id="start-url"
+              type="url"
+              required
+              placeholder="https://your-app.com/auth/utilint/start"
               value={field.state.value}
               onChange={(event) => field.handleChange(event.target.value)}
             />

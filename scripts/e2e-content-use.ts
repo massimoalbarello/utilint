@@ -122,7 +122,11 @@ try {
         await fetch('/api/developer/apps', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ name: 'Content Use', redirectUris: [callback] }),
+          body: JSON.stringify({
+            name: 'Content Use',
+            redirectUris: [callback],
+            startUrl: new URL('/api/utilint/start', callback).href,
+          }),
         })
       ).json(),
     `${c}/api/utilint/callback`,
@@ -217,9 +221,49 @@ try {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.screenshot({ path: resolve('outputs/content-use-mobile.png'), fullPage: true });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  // The exact dashboard link performs a real self-authorization, including both logged-out apps.
+  await page.goto(`${c}/settings`);
+  await page.getByRole('button', { name: 'Disconnect utilint', exact: true }).click();
+  await page.getByRole('button', { name: 'Sign out', exact: true }).click();
+  await developer.goto(`${u}/dashboard`);
+  await developer.getByRole('button', { name: 'Sign out', exact: true }).click();
+  // Keep the Content Use passkey on its original authenticator. It navigates the public link first.
+  await page.goto(`${u}/connect/${client.client_id}`);
+  await expect(page.getByRole('button', { name: 'Sign in with passkey' })).toBeVisible();
+  await page.getByRole('button', { name: 'Sign in with passkey' }).click();
+  await expect(page.getByRole('heading', { name: 'Continue to Content Use' })).toBeVisible();
+  // The developer's authenticator holds their real registered Utilint passkey.
+  await developer.goto(page.url());
+  await page.close();
+  await developer.getByRole('button', { name: 'Sign in with a passkey' }).click();
+  await expect(
+    developer.getByRole('heading', { name: 'Connect your ChatGPT subscription' }),
+  ).toBeVisible();
+  await developer.getByRole('button', { name: 'Connect ChatGPT', exact: true }).click();
+  await expect(developer.getByLabel('ChatGPT sign-in code')).toHaveText('TEST-12345');
+  f.state.now += 6000;
+  await expect(developer.getByRole('heading', { name: 'Authorize Content Use' })).toBeVisible({
+    timeout: 20000,
+  });
+  await developer.getByRole('button', { name: 'Allow connection' }).click();
+  await expect(developer.getByRole('heading', { name: 'utilint connected' })).toBeVisible();
+  expect((await (await context.request.get(`${c}/api/utilint`)).json()).connected).toBe(true);
+  expect((await (await context.request.get(`${u}/api/dashboard`)).json()).connections).toEqual([
+    { clientId: client.client_id, name: 'Content Use' },
+  ]);
+  await developer.screenshot({
+    path: resolve('outputs/consent-real-link-complete.png'),
+    fullPage: true,
+  });
+  await developer.goto(`${u}/connect/${client.client_id}/test`);
+  await expect(
+    developer.getByRole('heading', { name: 'Content Use is already authorized' }),
+  ).toBeVisible();
+  await developer.getByRole('button', { name: 'Continue to Content Use' }).click();
+  await expect(developer.getByRole('heading', { name: 'utilint connected' })).toBeVisible();
   expect(errors).toEqual([]);
   console.log(
-    'PASS two-app browser flow: dashboard summary → Utilint signup → ChatGPT → consent → server exchange → gateway summary → returning-user skip → mobile',
+    'PASS two-app browser flow: dashboard summary → Utilint signup → ChatGPT → consent → server exchange → gateway summary → returning-user skip → mobile → signed-out real link → developer self-authorization',
   );
 } catch (error) {
   for (const page of context.pages())

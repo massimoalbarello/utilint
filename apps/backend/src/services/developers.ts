@@ -1,44 +1,77 @@
-import { createHash, randomBytes } from 'node:crypto';
 import type { Auth } from '#lib/auth/better-auth.ts';
-import { CONSENT_TEST_STATE_PREFIX } from '#models/consent.ts';
 import { AppError } from '#models/gateway.ts';
-export function createDeveloperService(auth: Auth) {
+import type { DeveloperRepository } from '#repositories/developers.ts';
+
+function validateStart(value: string, callbacks: string[]) {
+  const url = new URL(value);
+  if (
+    url.username ||
+    url.password ||
+    url.hash ||
+    url.search ||
+    !(
+      url.protocol === 'https:' ||
+      (url.protocol === 'http:' && ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname))
+    ) ||
+    !callbacks.some((callback) => new URL(callback).origin === url.origin)
+  ) {
+    throw new AppError(
+      400,
+      'invalid_start_url',
+      'Use an HTTPS start URL on the same origin as a redirect URL (or HTTP localhost).',
+    );
+  }
+}
+export function createDeveloperService(auth: Auth, repository: DeveloperRepository) {
   return {
-    list(headers: Headers) {
-      return auth.api.getOAuthClients({ headers });
+    async list(headers: Headers, ownerId: string) {
+      const apps = await auth.api.getOAuthClients({ headers });
+      const starts = new Map(
+        (await repository.listStarts(ownerId)).map((item) => [item.clientId, item.url]),
+      );
+      return (apps ?? []).map((app) => ({ ...app, startUrl: starts.get(app.client_id) ?? null }));
     },
-    async testUrl({
+    async startUrl(clientId: string) {
+      const url = await repository.publicStart(clientId);
+      if (!url)
+        throw new AppError(404, 'not_found', 'This app has not configured its connection URL.');
+      return url;
+    },
+    async updateStart({
       headers,
+      ownerId,
       clientId,
-      origin,
+      startUrl,
     }: {
       headers: Headers;
+      ownerId: string;
       clientId: string;
-      origin: string;
+      startUrl: string;
     }) {
-      const apps = await auth.api.getOAuthClients({ headers });
-      const app = apps?.find((item) => item.client_id === clientId);
-      const callback = app?.redirect_uris[0];
-      if (!app || app.disabled || !callback) throw new AppError(404, 'not_found', 'App not found.');
-      const url = new URL(`/connect/${encodeURIComponent(clientId)}`, origin);
-      url.search = new URLSearchParams({
-        redirect_uri: callback,
-        state: `${CONSENT_TEST_STATE_PREFIX}${randomBytes(32).toString('base64url')}`,
-        // The verifier is discarded: test links cannot be exchanged for tokens.
-        code_challenge: createHash('sha256').update(randomBytes(32)).digest('base64url'),
-      }).toString();
-      return url.href;
+      const app = (await auth.api.getOAuthClients({ headers }))?.find(
+        (app) => app.client_id === clientId,
+      );
+      if (!app) throw new AppError(404, 'not_found', 'App not found.');
+      validateStart(startUrl, app.redirect_uris);
+      if (!(await repository.saveStart(ownerId, clientId, startUrl)))
+        throw new AppError(404, 'not_found', 'App not found.');
+      return { saved: true };
     },
-    register({
+    async register({
       headers,
+      ownerId,
       name,
       redirectUris,
+      startUrl,
     }: {
       headers: Headers;
+      ownerId: string;
       name: string;
       redirectUris: string[];
+      startUrl?: string;
     }) {
-      return auth.api.createOAuthClient({
+      if (startUrl) validateStart(startUrl, redirectUris);
+      const client = await auth.api.createOAuthClient({
         headers,
         body: {
           client_name: name,
@@ -54,6 +87,8 @@ export function createDeveloperService(auth: Auth) {
           scope: 'profile ai:invoke offline_access',
         },
       });
+      if (startUrl) await repository.saveStart(ownerId, client.client_id, startUrl);
+      return client;
     },
     rotate({ headers, clientId }: { headers: Headers; clientId: string }) {
       return auth.api.rotateClientSecret({ headers, body: { client_id: clientId } });

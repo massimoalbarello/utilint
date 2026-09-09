@@ -10,6 +10,7 @@ import { createChatGPTProvider } from '../../src/lib/chatgpt';
 import { createChatGPTAuth } from '../../src/lib/chatgpt-auth';
 import { createVault } from '../../src/lib/vault';
 import { createConnectionRepository } from '../../src/repositories/sqlite-connections';
+import { createDeveloperRepository } from '../../src/repositories/sqlite-developers';
 import { createDashboardService } from '../../src/services/dashboard';
 import { createDeveloperService } from '../../src/services/developers';
 import { createGatewayService } from '../../src/services/gateway';
@@ -123,7 +124,7 @@ export async function fixture(origin = 'http://localhost:4350', assets = new Map
     auth,
     providers,
     dashboard: createDashboardService(repository, providers),
-    developers: createDeveloperService(auth),
+    developers: createDeveloperService(auth, createDeveloperRepository(db)),
     gateway: createGatewayService(repository, providers),
     assets,
     origin,
